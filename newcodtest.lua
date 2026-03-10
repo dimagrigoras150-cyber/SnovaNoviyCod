@@ -918,12 +918,8 @@ local cryptoAnalysys = {
 }
   
     imgui_windows.dialog.v = true
-        if not work.on then return false end
-    else
-        if not work.on then imgui_windows.dialog.v = false end
-    end
-
-    if not work.on then return end
+    if not work.on then imgui_windows.dialog.v = false return false end
+    
 
     -- Вспомогательные функции
     local function deactivateScript(message, needOff)
@@ -1087,3 +1083,4 @@ function sampev.onShowDialog(id, style, title, button1, button2, text)
         return false
     end
 end
+
