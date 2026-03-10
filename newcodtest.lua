@@ -980,7 +980,6 @@ local cryptoAnalysys = {
         end
     end
     -- [ОСТАЛЬНЫЕ РЕЖИМЫ (Mode 2, 3, 4) ДОЛЖНЫ ИДТИ НИЖЕ]
-end
 
 function sampev.onServerMessage(color, text)
     if not work.on then return end
@@ -1083,4 +1082,5 @@ function sampev.onShowDialog(id, style, title, button1, button2, text)
         return false
     end
 end
+
 
