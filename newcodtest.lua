@@ -916,137 +916,8 @@ local cryptoAnalysys = {
     btc = 0,
     asc = 0
 }
-  elseif work.mode == 2 then
-
-        if title:find('{BFBBBA}Выберите видеокарту') then
-            if title:find('%(дом') then
-                deactivateScript("Режим охлаждения работает только в ручном режиме. Не в /flashminer. Скрипт деактивирован.", true)
-                return
-            end
-
-            if not text:find("(%d+%.%d+)%%?%s*$") then
-                deactivateScript("Охлаждение не нужно. 1")
-                return
-            end
-
-            if not findLineAndRespond("(%d+%.%d+)%%?%s*$", function(line) return tonumber(line:match("(%d+%.%d+)%%?%s*$")) <= cfg.coolantPercents end, -1) then
-                deactivateScript("Охлаждение не нужно. 2")
-            end
-
-        elseif title:gsub("%-",""):find("{BFBBBA}Стойка №%d+ | Полка №%d+") then
-            if work.needSkip then
-                sampSendDialogResponsed(id, 0)
-                work.needSkip = false
-                return
-            end
-
-            if not findLineAndRespond('Залить охлаждающую жидкость', function() return true end, 0) then
-                sampSendDialogResponsed(id, 0)
-            else
-                work.videocardMode = ""
-                if text:find("BTC") then
-                    work.videocardMode = "btc"
-                elseif text:find("ASC") then
-                    work.videocardMode = "asc"
-                end
-            end
-
-        elseif title:find('{BFBBBA}Выберите тип жидкости') then
-            local fluidType = "None"
-            if work.videocardMode == 'btc' then
-                fluidType = "для видеокарты"
-            elseif work.videocardMode == 'asc' then
-                fluidType = "Охлаждающая жидкость для Arizona Video Card"
-            end
-            if not findLineAndRespond(fluidType, function(line) -- Охлаждающая жидкость для видеокарты	{CCCCCC}[ 15 ]
-                return tonumber(line:match("%[ (%d+) %]")) > 0
-            end, -1) then
-                deactivateScript("Скрипт деактивирован. Нет охлаждающей жидкости.", false)
-                sampSendDialogResponsed(id, 0)
-                needReturnToMainWindow = true
-            end
-            work.needSkip = true
-        end
-
-    elseif work.mode == 3 or work.mode == 4 then
-
-        if title:find('{BFBBBA}Выберите видеокарту') then
-
-            if not findLineAndRespond(work.mode==3 and "{F78181}На паузе" or "{BEF781}Работает", function(line)
-                return tonumber(line:match("(%d+%.%d+)%%?%s*$")) > 0
-            end, -1) then
-                deactivateScript("Работа не требуется, или в видеокартах нет охл. жидкости.")
-            end
-
-        elseif title:gsub("%-",""):find("{BFBBBA}Стойка №%d+ | Полка №%d+") then
-            if not findLineAndRespond(work.mode==3 and "{BEF781}Запустить видеокарту" or "{F78181}Остановить видеокарту", function() return true end, 0) then
-                sampSendDialogResponsed(id, 0)
-            end
-        end
-    end
-end
-function sampev.onShowDialog(id, style, title, button1, button2, text, placeholder)
-    -- [1. ЛОГИКА АВТО-ОБХОДА ДОМОВ]
-    if autoBot.enabled and autoBot.stage > 0 then
-        -- Проверяем заголовок (подходит для "Выберите дом" или "Список ваших домов")
-        if title:find("дом") or title:find("Дома") then
-            local houses = {}
-            for line in text:gmatch("[^\r\n]+") do
-                if line:find("№") then table.insert(houses, line) end
-            end
-            autoBot.maxHouses = #houses
-
-            if autoBot.currentHouse < autoBot.maxHouses then
-                local clickIdx = autoBot.currentHouse
-                autoBot.currentHouse = autoBot.currentHouse + 1
-                autoBot.stage = 2 -- Переходим к чистке видеокарт
-                
-                lua_thread.create(function()
-                    wait(1000)
-                    sampSendDialogResponse(id, 1, clickIdx, "")
-                end)
-                return false -- Скрываем меню домов
-            else
-                autoBot.stage = 0
-                utils.addChat("{99ff99}[AutoBot]{ffffff} Все дома проверены!")
-                sampSendDialogResponse(id, 0, 0, "")
-                return false
-            end
-        end
-    -- [2. ТВОЯ ОРИГИНАЛЬНАЯ ЛОГИКА ПАРСИНГА]
-		if needReturnToMainWindow then
-        local a = title:gsub("%-","")
-        if a:find("{BFBBBA}Стойка №%d+ | Полка №%d+") or a:find("{BFBBBA}Выберите тип жидкости") then
-            sampSendDialogResponsed(id, 0)
-        end
-    end
-
-    if title:find("{BFBBBA}Выберите видеокарту") then
-        needReturnToMainWindow = false
-        if not cfg.on then return end
-        __imDialogData.id = id
-        __imDialogData.title = title
-        __imDialogData.videocards = {}
-        __imDialogData.selectedVideocard = -1
-
-        local listboxId = -1
-        for line in text:gmatch("[^\r\n]+") do
-            if line:find("^Полка") then
-                local insertText = (line:find("Работает") and line:gsub("Работает", "Работает{ffffff}") or line:gsub("На паузе", "На паузе{ffffff}")):gsub("Полка №%d+", "Видеокарта №"..(#__imDialogData.videocards+1))
-                local properDetect = line:match("(%d+%.%d+)%%?%s*$")
-                if properDetect and tonumber(properDetect) <= cfg.coolantPercents then
-                    insertText = insertText:gsub("(%d+%.%d+)%%?%s*$", "{ff9999}%1%%")
-                elseif properDetect then
-                    insertText = insertText:gsub("(%d+%.%d+)%%?%s*$", "{99ff99}%1%%")
-                end
-                insertText = insertText:gsub("(%d+%.%d+%s+BTC)", "{ffcc00}%1{ffffff}"):gsub("(%d+%.%d+%s+ASC)", "{ffa500}%1{ffffff}")
-
-                table.insert(__imDialogData.videocards, {listboxId, insertText})
-                __imDialogData.selectedVideocard = __imDialogData.selectedVideocard==-1 and listboxId or __imDialogData.selectedVideocard
-            end
-            listboxId = listboxId+1
-        end
-        imgui_windows.dialog.v = true
+  
+    imgui_windows.dialog.v = true
         if not work.on then return false end
     else
         if not work.on then imgui_windows.dialog.v = false end
@@ -1178,5 +1049,41 @@ function onWindowMessage(msg, wparam, lparam)
                 end
             end
         end
+    end
+
+end
+
+function sampev.onShowDialog(id, style, title, button1, button2, text)
+    -- Твой новый автобот
+    if autoBot.status and title:find("{BFBBBA}Список домов") then
+        local clickIdx = autoBot.currentHouse
+        autoBot.currentHouse = autoBot.currentHouse + 1
+        autoBot.stage = 2
+        lua_thread.create(function()
+            wait(1000)
+            sampSendDialogResponse(id, 1, clickIdx, "")
+        end)
+        return false
+    end
+
+    -- Твоя логика из оригинального скрипта
+    if needReturnToMainWindow then
+        local a = title:gsub("%-", "")
+        if a:find("{BFBBBA}Стойка №%d+") or a:find("{BFBBBA}Полка №%d+") or a:find("{BFBBBA}Выберите тип жидкости") then
+            sampSendDialogResponse(id, 0)
+        end
+    end
+
+    if title:find("{BFBBBA}Выберите видеокарту") then
+        needReturnToMainWindow = false
+        if not work.on then return end
+        _imDialogData.id, _imDialogData.title, _imDialogData.text = id, title, text
+        _imDialogData.button1, _imDialogData.button2 = button1, button2
+        local list = {}
+        for line in text:gmatch("[^\r\n]+") do table.insert(list, line) end
+        _imDialogData.list = list
+        if not imgui_windows.dialog.v then _imDialogData.show = true end
+        imgui_windows.dialog.v = true
+        return false
     end
 end
