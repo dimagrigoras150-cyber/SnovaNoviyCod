@@ -1,1086 +1,868 @@
-script_name('Mining Tools')
+script_name("Mimgui Scoreboard [by MTG MODS]")
+script_author("MTG MODS")
+script_version("1.2.0")
 
-require("moonloader")
-local sampev = require("samp.events")
-local imgui = require("imgui")
+require "lib.moonloader"
 local encoding = require('encoding')
-encoding.default =('CP1251')
+encoding.default = 'CP1251'
 local u8 = encoding.UTF8
 
-if sampev.INTERFACE.INCOMING_RPCS[61][2]['dialogId'] == 'uint16' then
-    print('normal sampev, patched.')
+--[[
+function isMonetLoader() return MONET_VERSION ~= nil end
+if MONET_DPI_SCALE == nil then MONET_DPI_SCALE_2 = 1.0 else MONET_DPI_SCALE_2 = MONET_DPI_SCALE / 1.25 end
 
-    sampev.INTERFACE.INCOMING_RPCS[61] = {
-        'onShowDialog',
-        {dialogId = 'uint16'},
-        {style = 'uint8'},
-        {title = 'string8'},
-        {button1 = 'string8'},
-        {button2 = 'string8'},
-        {text = 'encodedString4096'},
-        {placeholder = 'string8'}
-    }
-else
-    print('old sampev, skip patch onShowDialog')
+if isMonetLoader() then
+	widgets = require('widgets')
 end
 
-do
-    imgui.SwitchContext()
-    local style = imgui.GetStyle()
-    local colors = style.Colors
-    local clr = imgui.Col
-    local ImVec4 = imgui.ImVec4
-    local ImVec2 = imgui.ImVec2
+]]
 
-    -- Цвета
-    colors[clr.Text]                 = ImVec4(0.90, 0.90, 0.90, 1.00)
-    colors[clr.TextDisabled]         = ImVec4(0.60, 0.60, 0.60, 1.00)
-    colors[clr.WindowBg]             = ImVec4(0.12, 0.14, 0.17, 1.00)
-    colors[clr.ChildWindowBg]        = ImVec4(0.10, 0.14, 0.17, 1.00)
-    colors[clr.PopupBg]              = ImVec4(0.08, 0.08, 0.08, 0.94)
-    colors[clr.Border]               = ImVec4(0.43, 0.43, 0.50, 0.50)
-    colors[clr.BorderShadow]         = ImVec4(0.00, 0.00, 0.00, 0.00)
-    colors[clr.FrameBg]              = ImVec4(0.20, 0.25, 0.29, 1.00)
-    colors[clr.FrameBgHovered]       = ImVec4(0.18, 0.35, 0.58, 0.40)
-    colors[clr.FrameBgActive]        = ImVec4(0.18, 0.35, 0.58, 0.67)
-    colors[clr.TitleBg]              = ImVec4(0.09, 0.12, 0.14, 0.65)
-    colors[clr.TitleBgActive]        = ImVec4(0.18, 0.35, 0.58, 1.00)
-    colors[clr.TitleBgCollapsed]     = ImVec4(0.00, 0.00, 0.00, 0.51)
-    colors[clr.MenuBarBg]            = ImVec4(0.15, 0.18, 0.22, 1.00)
-    colors[clr.ScrollbarBg]          = ImVec4(0.02, 0.02, 0.02, 0.39)
-    colors[clr.ScrollbarGrab]        = ImVec4(0.20, 0.25, 0.29, 1.00)
-    colors[clr.ScrollbarGrabHovered] = ImVec4(0.18, 0.22, 0.25, 1.00)
-    colors[clr.ScrollbarGrabActive]  = ImVec4(0.09, 0.21, 0.31, 1.00)
-    colors[clr.ComboBg]              = ImVec4(0.20, 0.25, 0.29, 1.00)
-    colors[clr.CheckMark]            = ImVec4(0.18, 0.35, 0.58, 1.00)
-    colors[clr.SliderGrab]           = ImVec4(0.18, 0.35, 0.58, 1.00)
-    colors[clr.SliderGrabActive]     = ImVec4(0.22, 0.39, 0.63, 1.00)
-    colors[clr.Button]               = ImVec4(0.20, 0.25, 0.29, 1.00)
-    colors[clr.ButtonHovered]        = ImVec4(0.18, 0.35, 0.58, 1.00)
-    colors[clr.ButtonActive]         = ImVec4(0.22, 0.39, 0.63, 1.00)
-    colors[clr.Header]               = ImVec4(0.18, 0.35, 0.58, 0.55)
-    colors[clr.HeaderHovered]        = ImVec4(0.22, 0.39, 0.63, 0.80)
-    colors[clr.HeaderActive]         = ImVec4(0.22, 0.39, 0.63, 1.00)
-    colors[clr.Separator]            = ImVec4(0.43, 0.43, 0.50, 0.50)
-    colors[clr.SeparatorHovered]     = ImVec4(0.60, 0.60, 0.70, 1.00)
-    colors[clr.SeparatorActive]      = ImVec4(0.70, 0.70, 0.90, 1.00)
-    colors[clr.ResizeGrip]           = ImVec4(0.18, 0.35, 0.58, 0.25)
-    colors[clr.ResizeGripHovered]    = ImVec4(0.18, 0.35, 0.58, 0.67)
-    colors[clr.ResizeGripActive]     = ImVec4(0.18, 0.35, 0.58, 0.95)
-    colors[clr.CloseButton]          = ImVec4(0.20, 0.25, 0.29, 0.60)
-    colors[clr.CloseButtonHovered]   = ImVec4(0.25, 0.30, 0.35, 0.80)
-    colors[clr.CloseButtonActive]    = ImVec4(0.30, 0.35, 0.40, 1.00)
-    colors[clr.PlotLines]            = ImVec4(0.61, 0.61, 0.61, 1.00)
-    colors[clr.PlotLinesHovered]     = ImVec4(1.00, 0.43, 0.35, 1.00)
-    colors[clr.PlotHistogram]        = ImVec4(0.90, 0.70, 0.00, 1.00)
-    colors[clr.PlotHistogramHovered] = ImVec4(1.00, 0.60, 0.00, 1.00)
-    colors[clr.TextSelectedBg]       = ImVec4(0.18, 0.35, 0.58, 0.35)
-    --colors[clr.ModalWindowDarkening] = ImVec4(0.80, 0.80, 0.80, 0.35)
-
-    -- Скругления и отступы
-    style.WindowPadding = ImVec2(15, 15)
-    style.WindowRounding = 3.0
-    style.FramePadding = ImVec2(5, 5)
-    style.ItemSpacing = ImVec2(12, 8)
-    style.ItemInnerSpacing = ImVec2(8, 6)
-    style.IndentSpacing = 25.0
-    style.ScrollbarSize = 15.0
-    style.ScrollbarRounding = 15.0
-    style.GrabMinSize = 15.0
-    style.GrabRounding = 7.0
-    style.ChildWindowRounding = 8.0
-    style.FrameRounding = 6.0
-end
-
-do
-    Jcfg = {
-        _version = 2.3,
-        _author = "JF",
-        _telegram = "-----",
-        _help = [[
-            Jcfg - модуль для сохранения и загрузки конфигурационных файлов в Lua, используя формат JSON, с поддержкой конфигурации для ImGui.
-            Важно: модуль должен быть подключен после всех необходимых `require`.
-
-            Использование:
-                - Инициализация модуля:
-                    jcfg = Jcfg()
-
-                - Сохранение массива в файл:
-                    jcfg.save(table, path)
-                    - table: массив, который нужно сохранить.
-                    - path: путь для сохранения. Если не указан, сохранение будет в moonloader/config/Имя_скрипта/config.json
-
-                - Загрузка массива из файла:
-                    table = jcfg.load(path)
-                    - table: переменная, в которую будет загружен массив.
-                    - path: путь к файлу для загрузки. Если не указан, будет искать в moonloader/config/Имя_скрипта/config.json
-
-                - Обновление массива данными из файла:
-                    jcfg.update(table, path)
-                    - table: массив, который нужно обновить данными из файла.
-                    - path: путь к файлу для загрузки. Если не указан, будет искать в moonloader/config/Имя_скрипта/config.json
-
-                - Настройка массива для использования с ImGui:
-                    imtable = jcfg.setupImgui(table)
-                    - table: массив, который будет преобразован для использования с ImGui.
-                    - imtable: возвращает массив, готовый к использованию с ImGui.
-
-            Пример использования:
-
-                -- Инициализация модуля
-                local jcfg = Jcfg()
-
-                -- Создание конфигурации
-                local cfg = {
-                    params = {'123'},
-                    param = 12
-                }
-
-                -- Обновление конфигурации данными из файла (если файл существует)
-                jcfg.update(cfg)
-
-                -- Настройка конфигурации для использования с ImGui
-                local imcfg = jcfg.setupImgui(cfg)
-
-                -- Сохранение конфигурации в файл
-                jcfg.save(cfg)
-        ]]
+local bitex = require('bitex')
+local memory = require "memory"
+local ffi = require 'ffi'
+local fa = require('fAwesome6_solid')
+local imgui = require('mimgui')
+local inicfg = require 'inicfg'
+local MainIni = inicfg.load({
+    settings = {
+        main_theme = 1,
+        transparent_bg = 50,
+		show_actions_menu = true,
+        colored_id = true,
+        colored_nickname = true,
+        colored_score = true,
+        colored_ping = true,
+		
     }
+}, "MimguiScoreboard.ini")
+local new = imgui.new
+local renderTAB, renderSettings = new.bool(), new.bool()
+local radiobutton_theme1 = MainIni.settings.main_theme == 1
+local radiobutton_theme2 = MainIni.settings.main_theme == 2
+local radiobutton_theme3 = MainIni.settings.main_theme == 3
+local checkbox_fon = new.bool(MainIni.settings.transparent_bg)
+local inputField = new.char[256]()
+local checkbox1 = new.bool(MainIni.settings.colored_id)
+local checkbox2 = new.bool(MainIni.settings.colored_nickname)
+local checkbox3 = new.bool(MainIni.settings.colored_score)
+local checkbox4 = new.bool(MainIni.settings.colored_ping)
+local checkbox5 = new.bool(MainIni.settings.show_actions_menu)
+local SliderOne = new.int(MainIni.settings.transparent_bg)
+local sizeX, sizeY = getScreenResolution()
+--if isMonetLoader() then imgui.GetStyle().ScrollbarSize = imgui.GetStyle().ScrollbarSize * 2 end
 
-    function Jcfg.__init()
-        local self = {}
+local call_checker = false
 
-        local json = require('dkjson')
+function main()
 
-        local function makeDirectory(path)
-            assert(type(path) == "string" and path:find('moonloader'), "Path must be a string and include 'moonloader' folder")
-
-            path = path:gsub("[\\/][^\\/]+%.json$", "")
-
-            if not doesDirectoryExist(path) then
-                if not createDirectory(path) then
-                    return error("Failed to create directory: " .. path)
-                end
-            end
-        end
-
-        local function setupImguiConfig(table)
-            assert(type(table) == "table", ("bad argument #1 to 'setupImgui' (table expected, got %s)"):format(type(table)))
-            local function setupImguiConfigRecursive(table)
-                local imcfg = {}
-                for k, v in pairs(table) do
-                    if type(v) == "table" then
-                        imcfg[k] = setupImguiConfigRecursive(v)
-                    elseif type(v) == "number" then
-                        if v % 1 == 0 then
-                            imcfg[k] = imgui.ImInt(v)
-                        else
-                            imcfg[k] = imgui.ImFloat(v)
-                        end
-                    elseif type(v) == "string" then
-                        imcfg[k] = imgui.ImBuffer(256)
-                        imcfg[k].v = u8(v)
-                    elseif type(v) == "boolean" then
-                        imcfg[k] = imgui.ImBool(v)
-                    else
-                        error(("Unsupported type for imguiConfig: %s"):format(type(v)))
-                    end
-                end
-                return imcfg
-            end
-            return setupImguiConfigRecursive(table)
-        end
-        ----------------------------------------------------------------
-
-        function self.save(table, path)
-            assert(type(table)=="table", ("bad argument #1 to 'save' (table expected, got %s)"):format(type(table)))
-            assert(path == nil or type(path) == "string", "Path must be nil or a valid file path.")
-            if path then
-                path = path:find('%.json$') and path or path..'.json'
-            else
-                assert(thisScript().name, "Script name is not defined")
-                path = getWorkingDirectory()..'\\config\\'..thisScript().name..'\\config.json'
-            end
-            makeDirectory(path)
-            local file = io.open(path,"w")
-            if file then
-                file:write(json.encode(table, {indent = true}))
-                file:close()
-            else
-                error("Could not open file for writing: " .. path)
-            end
-        end
-
-        function self.load(path)
-            assert(path == nil or type(path) == "string", "Path must be nil or a valid file path.")
-            if path then
-                path = path:find('%.json$') and path or path..'.json'
-			else
-				path = getWorkingDirectory()..'\\config\\'..thisScript().name..'\\config.json'
+    if not isSampLoaded() or not isSampfuncsLoaded() then return end
+    while not isSampAvailable() do wait(0) end 
+	
+	sampAddChatMessage('{ff0000}[INFO] {ffffff}       "Mimgui Scoreboard"                          !      : MTG MODS |       : ' .. thisScript().version,-1)
+	
+	sampRegisterChatCommand('tab', function()
+		renderTAB[0] = not renderTAB[0]
+    end)
+	
+	while true do
+		wait(0)
+		
+		--[[if isMonetLoader() then 
+		
+			if isWidgetDoubletapped(WIDGET_PLAYER_INFO) then
+				--sendUpdateScoresRPC()
+				renderTAB[0] = not renderTAB[0]
 			end
-            if doesFileExist(path) then
-                local file = io.open(path, "r")
-                if file then
-                    local content = file:read("*all")
-                    file:close()
-                    return json.decode(content)
-                else
-                    return error("Could not load configuration")
-                end
-            else
-                return {}
-            end
-        end
+			
+		end]]
+		
+		if sampIsScoreboardOpen() then 
+			sampToggleScoreboard(false) 
+		end
+			
+		
+		
+	end
+	
+end
 
-        function self.update(table, path)
-            assert(type(table)=="table", ("bad argument #1 to 'update' (table expected, got %s)"):format(type(table)))
-            assert(path == nil or (type(path) == "string" and path:match("^.+%.json$")), "Path must be nil or a valid file path ending with '.json'")
-            local loadedCfg = self.load(path)
+imgui.OnInitialize(function()
 
-			if loadedCfg then
-				for k, v in pairs(table) do
-					if loadedCfg[k] ~= nil then
-						table[k] = loadedCfg[k]
+    imgui.GetIO().IniFilename = nil
+	
+	fa.Init(14 )
+	
+    if MainIni.settings.main_theme == 1 then
+		dark_theme()
+	elseif MainIni.settings.main_theme == 2 then
+		blue_theme()
+	elseif MainIni.settings.main_theme == 3 then
+		fiol_theme()
+	end
+	
+	local alpha = tonumber(SliderOne[0] / 100)
+	
+	if MainIni.settings.main_theme == 1 then
+		imgui.GetStyle().Colors[imgui.Col.WindowBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+		imgui.GetStyle().Colors[imgui.Col.PopupBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+		imgui.GetStyle().Colors[imgui.Col.ChildBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+		imgui.GetStyle().Colors[imgui.Col.FrameBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+		imgui.GetStyle().Colors[imgui.Col.TitleBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+	elseif MainIni.settings.main_theme == 2 then
+		imgui.GetStyle().Colors[imgui.Col.WindowBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+		imgui.GetStyle().Colors[imgui.Col.PopupBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+		imgui.GetStyle().Colors[imgui.Col.ChildBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+		imgui.GetStyle().Colors[imgui.Col.FrameBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+		imgui.GetStyle().Colors[imgui.Col.TitleBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+	elseif MainIni.settings.main_theme == 3 then
+		imgui.GetStyle().Colors[imgui.Col.WindowBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+		imgui.GetStyle().Colors[imgui.Col.PopupBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+		imgui.GetStyle().Colors[imgui.Col.ChildBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+		imgui.GetStyle().Colors[imgui.Col.FrameBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+		imgui.GetStyle().Colors[imgui.Col.TitleBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+	end
+	
+end)
+
+local Scoreboard = imgui.OnFrame(
+    function() return renderTAB[0] end,
+    function(player)
+	
+		imgui.GetStyle().ScrollbarSize = 10 
+		
+		imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
+		imgui.SetNextWindowSize(imgui.ImVec2(800 , 573 ), imgui.Cond.FirstUseEver)
+		imgui.Begin("##Begin", renderTAB, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoTitleBar + imgui.WindowFlags.NoMove )
+		
+		imgui.GetStyle().FrameRounding = 5.0 
+		if imgui.Button(fa.GEAR) then	
+			renderSettings[0] = true
+			renderTAB[0] = false
+		end
+		if imgui.IsItemHovered() then
+			imgui.SetTooltip(u8'Open settings')
+		end
+		
+		imgui.SameLine()
+		
+		imgui.GetStyle().FrameRounding = 20.0 
+		
+		if imgui.CenterColumnButton(' ' .. u8(sampGetCurrentServerName()) .. ' | '..sampGetPlayerCount(false) .. ' Players') then
+			imgui.OpenPopup(fa.GLOBE .. u8' Server information')
+		end
+		if imgui.BeginPopupModal(fa.GLOBE .. ' Server information', _, imgui.WindowFlags.NoResize + imgui.WindowFlags.NoMove) then
+			
+			imgui.Text('Name: ' .. u8(sampGetCurrentServerName()))
+			imgui.SameLine()
+			imgui.PushItemWidth(10 )
+			if imgui.Button(fa.COPY .. '##copy_name') then
+				setClipboardText(u8(sampGetCurrentServerName()))
+			end
+			
+			local ip, port = sampGetCurrentServerAddress()
+			imgui.Text('Address: ' .. ip .. ':' .. port)
+			imgui.SameLine()
+			imgui.PushItemWidth(10 )
+			if imgui.Button(fa.COPY .. '##copy_ip') then
+				setClipboardText(ip .. ':' .. port)
+			end
+			
+			imgui.Text('Players online: ' .. sampGetPlayerCount(false))
+			
+			if imgui.Button(fa.CIRCLE_XMARK .. ' Close', imgui.ImVec2(250 , 25 )) then
+				imgui.CloseCurrentPopup()
+			end
+			
+			imgui.End()
+		end	
+		
+		imgui.SameLine()
+		
+		imgui.SetCursorPosX( imgui.GetWindowWidth() - 170 )
+		imgui.PushItemWidth(135 )
+		imgui.GetStyle().FrameRounding = 3.0 
+		imgui.InputTextWithHint(u8'', u8'Search ID/Nickame', inputField, 256)
+		imgui.GetStyle().FrameRounding = 5.0 
+		imgui.SameLine()
+		
+		imgui.SetCursorPosX( imgui.GetWindowWidth() - 30 )
+		if imgui.Button(fa.CIRCLE_XMARK) then	
+			renderSettings[0] = false
+			renderTAB[0] = false
+		end
+		if imgui.IsItemHovered() then
+			imgui.SetTooltip(u8'Close Scoreboard')
+		end
+	
+		imgui.GetStyle().FrameRounding = 20.0 
+	
+		imgui.Separator()
+
+		if imgui.BeginChild('##binder_edit', imgui.ImVec2(790 , 528 ), false) then
+
+
+			if MainIni.settings.show_actions_menu then
+
+				imgui.Columns(5)
+				
+				imgui.SetColumnWidth(-1, 55 ) imgui.CenterColumnText('ID') imgui.NextColumn()
+				imgui.SetColumnWidth(-1, 535 ) imgui.CenterColumnText('Nickname') imgui.NextColumn()
+				imgui.SetColumnWidth(-1, 65 ) imgui.CenterColumnText('Score') imgui.NextColumn()
+				imgui.SetColumnWidth(-1, 65 ) imgui.CenterColumnText('Ping') imgui.NextColumn()
+				imgui.SetColumnWidth(-1, 65 ) imgui.CenterColumnText('Action') imgui.NextColumn()
+		
+			else
+				imgui.Columns(4)
+				
+				imgui.SetColumnWidth(-1, 55 ) imgui.CenterColumnText('ID') imgui.NextColumn()
+				imgui.SetColumnWidth(-1, 600 ) imgui.CenterColumnText('Nickname') imgui.NextColumn()
+				imgui.SetColumnWidth(-1, 65 ) imgui.CenterColumnText('Score') imgui.NextColumn()
+				imgui.SetColumnWidth(-1, 65 ) imgui.CenterColumnText('Ping') imgui.NextColumn()
+			
+			end
+		
+			if u8:decode(ffi.string(inputField)) == "" then
+				imgui.Separator()
+				local my_id = select(2, sampGetPlayerIdByCharHandle(playerPed))
+				drawScoreboardPlayer(my_id)
+				for id = 0, sampGetMaxPlayerId(false) do
+					if my_id ~= id and sampIsPlayerConnected(id) then
+						imgui.Separator()
+						drawScoreboardPlayer(id)
+					end
+				end
+			else
+				for idd = 0, sampGetMaxPlayerId(false) do
+					if sampIsPlayerConnected(idd) then
+						if tostring(idd):find(ffi.string(inputField):gsub("[%(%)%.%%%+%-%*%?%[%]%^%$]", "%%%1"))
+						   or string.rlower(sampGetPlayerNickname(idd)):find(string.rlower(u8:decode(ffi.string(inputField))):gsub("[%(%)%.%%%+%-%*%?%[%]%^%$]", "%%%1")) then
+							imgui.Separator()
+							drawScoreboardPlayer(idd)
+						end
 					end
 				end
 			end
-
-            return true
-        end
-
-        function self.setupImgui(table)
-            assert(imgui ~= nil, "The imgui library is not loaded. Please ensure it is required before using 'setupImgui' function.")
-            return setupImguiConfig(table)
-        end
-
-        return self
+			
+			
+			imgui.NextColumn()
+			imgui.Columns(1)
+			imgui.Separator()
+		
+		imgui.EndChild() end
+		
+		imgui.End()
+		
     end
-
-    setmetatable(Jcfg, {
-        __call = function(self)
-            return self.__init()
-        end
-    })
-end
-local jcfg = Jcfg()
-
-local cfg = {
-    on = true,
-    coolantPercents = 50,
-    multiply = 1
-}
-jcfg.update(cfg)
-local imcfg = jcfg.setupImgui(cfg)
-function save()
-    jcfg.save(cfg)
-end
-
-local utils = (function()
-    local self = {}
-
-    local function cyrillic(text)
-        local convtbl = {[230]=155,[231]=159,[247]=164,[234]=107,[250]=144,[251]=168,[254]=171,[253]=170,[255]=172,[224]=97,[240]=112,[241]=99,[226]=162,[228]=154,[225]=151,[227]=153,[248]=165,[243]=121,[184]=101,[235]=158,[238]=111,[245]=120,[233]=157,[242]=166,[239]=163,[244]=63,[237]=174,[229]=101,[246]=36,[236]=175,[232]=156,[249]=161,[252]=169,[215]=141,[202]=75,[204]=77,[220]=146,[221]=147,[222]=148,[192]=65,[193]=128,[209]=67,[194]=139,[195]=130,[197]=69,[206]=79,[213]=88,[168]=69,[223]=149,[207]=140,[203]=135,[201]=133,[199]=136,[196]=131,[208]=80,[200]=133,[198]=132,[210]=143,[211]=89,[216]=142,[212]=129,[214]=137,[205]=72,[217]=138,[218]=167,[219]=145}
-        local result = {}
-        for i = 1, #text do
-            local c = text:byte(i)
-            result[i] = string.char(convtbl[c] or c)
-        end
-        return table.concat(result)
-    end
-
-    local function roundUpToThreeDecimalPlaces(num)
-        local mult = 10^3
-        return math.ceil(num * mult) / mult
-    end
-
-    --------------------------------------------------------------------------------------------------------------------------------
-
-    function self.addChat(a)
-        if a then local a_type = type(a) if a_type == 'number' then a = tostring(a) elseif a_type ~= 'string' then return end else return end
-        sampAddChatMessage('{ffa500}'..thisScript().name..'{ffffff}: '..a, -1)
-    end
-
-    function self.printStringNow(text, time)
-        if not text then return end
-        time = time or 100
-        text = type(text) == "number" and tostring(text) or text
-        if type(text) ~= 'string' then return end
-        printStringNow(cyrillic(text), time)
-    end
-
-    function self.getVideocardEarnings(level)
-        -- local earningsTable = {
-        --     0.05,  -- 1 лвл
-        --     0.10, -- 2 лвл
-        --     0.15, -- 3 лвл
-        --     0.20, -- 4 лвл
-        --     0.36,  -- 5 лвл
-        --     0.43, -- 6 лвл
-        --     0.51, -- 7 лвл
-        --     0.61,  -- 8 лвл
-        --     0.73,  -- 9 лвл
-        --     0.85    -- 10 лвл
-        -- }
-        local earningsTable = {
-            0.05,  -- 1 лвл
-            0.10, -- 2 лвл
-            0.15, -- 3 лвл
-            0.20, -- 4 лвл
-            0.36,  -- 5 лвл
-            0.43, -- 6 лвл
-            0.51, -- 7 лвл
-            0.61,  -- 8 лвл
-            0.73,  -- 9 лвл
-            0.85    -- 10 лвл
-        }
-
-        local mult = cfg.multiply == 1 and 1 or cfg.multiply == 2 and 1.2
-
-        if earningsTable[level] then
-            return roundUpToThreeDecimalPlaces(earningsTable[level] * mult)
-            --return earningsTable[level]*1.15
-        else
-            return {0, 0}
-        end
-    end
-	function self.calculateTimeToNine(currentBtc, earningsPerHour)
-    		local target = 9
-    		local remaining = target - currentBtc
-    		if remaining <= 0 then
-        	return 0
-    end
-    return remaining / earningsPerHour
-end
-    function self.calculateRemainingHours(percent)
-        local consumptionPerHour = 0.48
-        local remainingHours = percent / consumptionPerHour
-        return remainingHours
-    end
-
-    return self
-end)()
-
-local work = {
-    on = false,
-    mode = 1,
-    needSkip = false,
-    videocardMode = ""
-}
-local autoBot = {
-    enabled = false,      -- Состояние (вкл/выкл)
-    lastRun = 0,          -- Время последнего запуска (в секундах os.clock)
-    interval = 3600,      -- Раз в час (3600 сек)
-    stage = 0,            -- Этап: 0 - спим, 1 - открыли флешку, 2 - зашли в дом
-    currentHouse = 0,     -- Какой по счету дом сейчас обрабатываем
-    maxHouses = 0,        -- Всего домов в списке
-    timer = 0             -- Внутренний таймер для пауз
-}
-
-local imgui_windows = {
-    main = imgui.ImBool(false),
-    dialog = imgui.ImBool(false)
-}
-
-local json_timer = {false, os.clock(), 0, 0, 0, ''}
-
-function main()
-    repeat wait(0) until isSampAvailable()
-    while not isSampLoaded() do wait(0) end
-
-    utils.addChat('{99ff99}Загружен{ffffff}. Команда: {ffa500}/farm')
-
-    sampRegisterChatCommand('farm', function()
-        cfg.on = not cfg.on
-        local text = cfg.on and "Скрипт {99ff99}включен{ffffff}." or "Скрипт {ff0000}отключен{ffffff}."
-        utils.addChat(text)
-        save()
-        --imgui_windows.dialog.v = not imgui_windows.dialog.v
-    end)
-	sampRegisterChatCommand('autofarm', function()
-        autoBot.enabled = not autoBot.enabled
-        local status = autoBot.enabled and "{99ff99}ВКЛЮЧЕН{ffffff}. Сбор начнется через 10 секунд." or "{ff0000}ВЫКЛЮЧЕН{ffffff}."
-        utils.addChat("Авто-сбор по домам: " .. status)
-        if autoBot.enabled then 
-            autoBot.lastRun = os.clock() - 3590 -- Запустит через 10 секунд после ввода команды
-        end
-    end)
-
-
-    while true do wait(0)
-	-- Проверка таймера авто-сбора
-        if autoBot.enabled and not work.on and not imgui_windows.dialog.v then
-            if os.clock() - autoBot.lastRun >= autoBot.interval then
-                autoBot.stage = 1
-                autoBot.currentHouse = 0
-                sampSendChat("/flashminer") -- Твоя команда открытия флешки
-                autoBot.lastRun = os.clock() -- Сбрасываем таймер на час вперед
-            end
-        end
+)
+local Settings = imgui.OnFrame(
+    function() return renderSettings[0] end,
+    function(player2)
 	
-        imgui.Process = imgui_windows.dialog.v
+		imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
+		imgui.SetNextWindowSize(imgui.ImVec2(800 , 573 ), imgui.Cond.FirstUseEver)
+        imgui.Begin(u8'             ', renderSettings, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoTitleBar + imgui.WindowFlags.NoMove)
+		
 
-        if json_timer[1] then
-            if json_timer[2] + 0.125 <= os.clock() then
-                json_timer[2] = os.clock()
-                json_timer[1] = false
-                sampSendDialogResponse(json_timer[3], json_timer[4], json_timer[5], json_timer[6])
-            end
-        end
-    end
-end
-
-local __imDialogData = {
-    id = 25565,
-    title = "Dialog",
-    videocards = {},
-    selectedVideocard = -1
-}
-
-local workLauncher = (function()
-    local self = {}
-
-    local checkers = {
-        [1] = function(v) -- checkVideocardStatus
-            if work.mode == 3 then
-                if v[2]:find("{F78181}На паузе") and tonumber(v[2]:match("(%d+%.%d+)%%?%s*$")) > 0 then
-                    return true
-                else
-                    return false
-                end
-            else
-                return v[2]:find("{BEF781}Работает") and true or false
-            end
-        end,
-
-        [2] = function(v) -- checkProfit
-            return tonumber(v[2]:match("(%d+)%.%d%d%d%d%d%d")) > 0
-        end,
-
-        [3] = function(v) -- checkCoolant
-            return tonumber(v[2]:match("(%d+%.%d+)%%?%s*$")) <= cfg.coolantPercents
-        end
-    }
-
-    function self.handleVideocardAction(mode, checkFunction, successMessage)
-        work.on = true
-        work.mode = mode
-        work.needSkip = false
-        for k, v in pairs(__imDialogData.videocards) do
-            if checkers[checkFunction](v) then
-                sampSendDialogResponsed(__imDialogData.id, 1, v[1])
-                return
-            end
-        end
-        work.on = false
-        utils.addChat(successMessage)
-    end
-
-    return self
-end)()
-
-local w,h = getScreenResolution()
-local window_width,window_height = 233,140
-local imStyle = imgui.GetStyle()
-function imgui.OnDrawFrame()
-
-    if imgui_windows.dialog.v then
-
-        imgui.SetNextWindowSize(imgui.ImVec2(1000, 600), imgui.Cond.FirstUseEver)
-        imgui.SetNextWindowPos(imgui.ImVec2(w/2 - 500, h/2 - 300), imgui.Cond.FirstUseEver)
-        imgui.Begin("##dialog_window", imgui_windows.dialog, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoTitleBar + imgui.WindowFlags.NoMove)
-
-        local coolantRestore = 0
-        local needAttention = false
-        local summaryAverage = {btc = 0}
-        local avaibleCrypto = {btc = 0}
-        local farmStopHours = nil
-
-        imgui.SameLine()
-        imgui.SetCursorPosX(1000/2 - imgui.CalcTextSize(u8(__imDialogData.title)).x/2)
-        imgui.TextColoredRGB(thisScript().name .. ": "..__imDialogData.title)
-
-        imgui.SameLine()
-
-        imgui.SetCursorPosX(1000 - 50 - imStyle.ItemSpacing.x)
-        imgui.SetCursorPosY(imStyle.ItemSpacing.y)
-        if imgui.customCloseButton("X##close_button", imgui.ImVec2(50, 25)) and not work.on then
-            __closeWindow(true)
-        end
-
-        imgui.Separator()
-
-        imgui.BeginChild('##child_wrapper 1', imgui.ImVec2(500, 0), false)
-
-            imgui.BeginChild('##dialog_child 1', imgui.ImVec2(0, imgui.GetWindowHeight()-50-imStyle.ItemSpacing.y*2), true)
-
-            --imgui.TextColoredRGB(__imDialogData.subTitle)
-            --imgui.Separator()
-
-            for k, v in pairs(__imDialogData.videocards) do
-                -- Проверка необходимости внимания
-                if v[2]:find("На паузе") or tonumber(v[2]:match('(%d+%.%d+)%%')) <= cfg.coolantPercents then
-                    needAttention = true
-                end
-
-                -- Обновление суммарного заработка
-                local level = tonumber(v[2]:match("(%d+) уровень"))
-                local earnings = utils.getVideocardEarnings(level)
-
-
-		local currentBtc = tonumber(v[2]:match("([%d%.]+)%s*BTC")) or 0
-
-		if currentBtc and earnings and earnings > 0 then
-    		local hoursLeft = utils.calculateTimeToNine(currentBtc, earnings)
-
-    		if not farmStopHours or hoursLeft < farmStopHours then
-        	farmStopHours = hoursLeft
-    		end
-	end
-                avaibleCrypto.btc = avaibleCrypto.btc + tonumber(v[2]:match("(%d+)%.%d%d%d%d%d%d"))
-		summaryAverage.btc = summaryAverage.btc + earnings
-
-                -- Извлечение текущего процента охлаждающей жидкости
-                local cT = tonumber(v[2]:match("(%d+%.%d+)%%"))
-                coolantRestore = (coolantRestore ~= 0) and (cT < coolantRestore and cT or coolantRestore) or cT
-
-                -- Обработка элементов интерфейса imgui
-                if imgui.SelectableEx(v[2], __imDialogData.selectedVideocard == v[1], 0, imgui.ImVec2(0, 15), function()
-                    if imgui.IsItemHovered() then
-                        if imgui.IsMouseDoubleClicked(0) then
-                            sampSendDialogResponsed(__imDialogData.id, 1, v[1])
-                            imgui_windows.dialog.v = false
-                        end
-                        imgui.BeginTooltip()
-                            imgui.TextColoredRGB('Доход:\n - В час: {99ff99}'..earnings..' BTC{ffffff}.\n - В сутки: {99ff99}'..(earnings*24)..' BTC{ffffff}.')
-                            imgui.TextColoredRGB('Проработает: {ffa500}'..(math.floor(utils.calculateRemainingHours(cT)))..' {ffffff}часов.')
-                        imgui.EndTooltip()
-                    end
-                end) then
-                    __imDialogData.selectedVideocard = v[1]
-                end
-            end
-
-            imgui.EndChild()
-
-            imgui.SetCursorPosX(imgui.GetWindowWidth()/2-100-imStyle.ItemSpacing.x)
-            imgui.PushStyleColor(imgui.Col.Text, imgui.ImVec4(0.5, 0.5, 0.5, 1.0))
-		if imgui.Button(u8'Выбрать##selectDialogBtn', imgui.ImVec2(100, 50)) and not work.on then
-                sampSendDialogResponsed(__imDialogData.id, 1, __imDialogData.selectedVideocard)
-                imgui_windows.dialog.v = false
-            end
-            imgui.PopStyleColor() -- не забываем вернуть цвет обратно
-		imgui.SameLine()
-            	imgui.PushStyleColor(imgui.Col.Text, imgui.ImVec4(0.5, 0.5, 0.5, 1.0))
-		if imgui.Button(u8'Закрыть##CloseDialogBtn', imgui.ImVec2(100, 50)) and not work.on then
-                __closeWindow(true)
-            end
-		imgui.PopStyleColor() -- не забываем вернуть цвет обратно
-        imgui.EndChild()
-
-        imgui.SameLine()
-
-        imgui.BeginChild('##child_wrapper 2', imgui.ImVec2(0, 0), false)
-
-            imgui.BeginChild('##dialog_child 2', imgui.ImVec2(0, imgui.GetWindowHeight()/2 - imStyle.ItemSpacing.y), true)
-
-                imgui.TextColoredRGB("Статус фермы: "..(needAttention and "{FFA500}Требует внимания!" or "{99ff99}Всё хорошо."))
-
-                local maxVideocards = (__imDialogData.title:find("дом") == nil) and 4 or 20
-
-                imgui.TextColoredRGB("Видеокарт: {ffcc00}"..#__imDialogData.videocards.." из "..maxVideocards..". {abcdef}"..(#__imDialogData.videocards>=maxVideocards and " " or "(Не хватает: "..(maxVideocards-#__imDialogData.videocards)..")"))
-
-                imgui.TextColoredRGB("Доходность:\n - В час: {99ff99}"..summaryAverage.btc.." BTC{ffffff}.\n - В сутки: {99ff99}"..(summaryAverage.btc*24)..' BTC{ffffff}.')
-		imgui.TextColoredRGB("Можно снять: {99ff99}"..avaibleCrypto.btc.." BTC.{ffffff}")
-
-                local coolantRestore = (math.floor(utils.calculateRemainingHours(coolantRestore)))
-                imgui.TextColoredRGB("{ffcc00}Дозаправка через: {ffcc00}"..coolantRestore.."ч.")
-		if farmStopHours then
-    			local totalMinutes = math.floor(farmStopHours * 60)
-			local hours = math.floor(totalMinutes / 60)
-			local minutes = totalMinutes % 60
-
-			imgui.TextColoredRGB("{ffcc00}Остановка майнинга через: {ffcc00}"..hours.."ч "..minutes.."м.")
+		if imgui.Button(fa.CIRCLE_LEFT) then	
+			renderSettings[0] = false
+			renderTAB[0] = true
 		end
-                imgui.Separator()
-
-                imgui.Text(u8'Расчет доходности:')
-                imgui.PushStyleColor(imgui.Col.Text, imgui.ImVec4(0.5, 1.0, 0.5, 1.0))
-                if imgui.RadioButton("ONLINE (+20%)##multuplyButton", imcfg.multiply, 2) then
-                    cfg.multiply = imcfg.multiply.v
-                    save()
-                end
-                imgui.PopStyleColor()
+		if imgui.IsItemHovered() then
+			imgui.SetTooltip(u8'Close Settings')
+		end
+		
+		imgui.SameLine()
+		
+		imgui.CenterText(fa.GEAR .. u8" Settings")	
 
 		imgui.SameLine()
-                imgui.PushStyleColor(imgui.Col.Text, imgui.ImVec4(1.0, 0.6, 0.6, 1.0))
-		if imgui.RadioButton("OFFLINE##multuplyButton", imcfg.multiply, 1) then
-                    cfg.multiply = imcfg.multiply.v
-                    save()
-                end
-		imgui.PopStyleColor()
+		
+		imgui.SetCursorPosX( imgui.GetWindowWidth() - 30 )
+		if imgui.Button(fa.CIRCLE_XMARK) then	
+			renderSettings[0] = false
+			renderTAB[0] = false
+		end
+		if imgui.IsItemHovered() then
+			imgui.SetTooltip(u8'Close')
+		end
+		
+		imgui.Separator()
+		
+		imgui.CenterText(fa.PALETTE .. " Color theme:")
+		if imgui.RadioButtonBool(u8' Dark ', radiobutton_theme1) then
+			radiobutton_theme1 = true
+			radiobutton_theme2 = false
+			radiobutton_theme3 = false
+			MainIni.settings.main_theme = 1
+			inicfg.save(MainIni,"MimguiScoreboard.ini")
+			dark_theme()
+		end 
+		if imgui.RadioButtonBool(u8' Blue ', radiobutton_theme2) then
+			radiobutton_theme1 = false
+			radiobutton_theme3 = false
+			radiobutton_theme2 = true
+			MainIni.settings.main_theme = 2
+			inicfg.save(MainIni,"MimguiScoreboard.ini")
+			blue_theme()
+		end
+		if imgui.RadioButtonBool(u8' Purple ', radiobutton_theme3) then
+			radiobutton_theme1 = false
+			radiobutton_theme3 = true
+			radiobutton_theme2 = false
+			MainIni.settings.main_theme = 3
+			inicfg.save(MainIni,"MimguiScoreboard.ini")
+			fiol_theme()
+		end
+		imgui.Separator()
+		imgui.CenterText(fa.PALETTE .. u8" Transparent:")
+		imgui.PushItemWidth( imgui.GetWindowWidth() - (15 ))
+		if imgui.SliderInt('', SliderOne, 0, 100) then
+		
+			local alpha = tonumber(SliderOne[0] / 100)
+		
+			MainIni.settings.transparent_bg = SliderOne[0]
+			inicfg.save(MainIni,"MimguiScoreboard.ini")
+		
+			if MainIni.settings.main_theme == 1 then
+				imgui.GetStyle().Colors[imgui.Col.WindowBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+				imgui.GetStyle().Colors[imgui.Col.PopupBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+				imgui.GetStyle().Colors[imgui.Col.ChildBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+				imgui.GetStyle().Colors[imgui.Col.FrameBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+				imgui.GetStyle().Colors[imgui.Col.TitleBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+			elseif MainIni.settings.main_theme == 2 then
+				imgui.GetStyle().Colors[imgui.Col.WindowBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+				imgui.GetStyle().Colors[imgui.Col.PopupBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+				imgui.GetStyle().Colors[imgui.Col.ChildBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+				imgui.GetStyle().Colors[imgui.Col.FrameBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+				imgui.GetStyle().Colors[imgui.Col.TitleBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+			elseif MainIni.settings.main_theme == 3 then
+				imgui.GetStyle().Colors[imgui.Col.WindowBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+				imgui.GetStyle().Colors[imgui.Col.PopupBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+				imgui.GetStyle().Colors[imgui.Col.ChildBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+				imgui.GetStyle().Colors[imgui.Col.FrameBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+				imgui.GetStyle().Colors[imgui.Col.TitleBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+			end
+		
+			
+		
+		
+		end
+		
+		imgui.Separator()
+		imgui.CenterText(fa.PALETTE .. u8(" View colored items from clist player:"))
+		if imgui.Checkbox(u8' Colored ID', checkbox1) then
+			MainIni.settings.colored_id = checkbox1[0]
+			inicfg.save(MainIni,"MimguiScoreboard.ini")
+		end
+		
+		if imgui.Checkbox(u8' Colored NickName', checkbox2) then
+			MainIni.settings.colored_nickname = checkbox2[0]
+			inicfg.save(MainIni,"MimguiScoreboard.ini")
+		end
+		
+		if imgui.Checkbox(u8' Colored Score', checkbox3) then
+			MainIni.settings.colored_score = checkbox3[0]
+			inicfg.save(MainIni,"MimguiScoreboard.ini")
+		end
+		
+		if imgui.Checkbox(u8' Colored Ping', checkbox4) then
+			MainIni.settings.colored_ping = checkbox4[0]
+			inicfg.save(MainIni,"MimguiScoreboard.ini")
+		end
 
-		imgui.EndChild()
+		imgui.Separator()
+		
+		imgui.CenterText(fa. BARS.. u8' Action Menu')
+		if imgui.Checkbox(u8' Show Actions menu in Scoreboard', checkbox5) then
+			MainIni.settings.show_actions_menu = checkbox5[0]
+			inicfg.save(MainIni,"MimguiScoreboard.ini")
+		end
+		imgui.Text(u8'Actions menu buttons: Copy Player NickName and Call Player (work only ARZ RP)')
 
-            imgui.BeginChild('##dialog_child 3', imgui.ImVec2(0, 0), true)
-
-                if work.on then
-                    local name = ""
-                    if work.mode == 1 then
-                        name = "Забираю прибыль..."
-                    elseif work.mode == 2 then
-                        name = "Заливаю охл. жидкость..."
-                    elseif work.mode == 3 then
-                        name = "Включаю видеокарты..."
-                    elseif work.mode == 4 then
-                        name = "Выключаю видеокарты..."
-                    end
-                    imgui.MihailKrug(name)
-                else
-		imgui.PushStyleColor(imgui.Col.Text, imgui.ImVec4(0.5, 1.0, 0.5, 1.0))
-                    if imgui.Button(u8'Включить видеокарты', imgui.ImVec2(imgui.GetWindowWidth()/2-imStyle.ItemSpacing.x*2, 30)) then
-                        workLauncher.handleVideocardAction(3, 1, "Все видеокарты включены, или в видеокартах нет охл. жидкости.")
-                    end
-                    imgui.PopStyleColor() -- не забываем вернуть цвет обратно
-                    imgui.SameLine()
-
-		imgui.PushStyleColor(imgui.Col.Text, imgui.ImVec4(1.0, 0.6, 0.6, 1.0))
-                    if imgui.Button(u8'Выключить видеокарты', imgui.ImVec2(imgui.GetWindowWidth()/2-imStyle.ItemSpacing.x, 30)) then
-                        workLauncher.handleVideocardAction(4, 1, "Все видеокарты выключены.")
-                    end
-                    imgui.PopStyleColor() -- не забываем вернуть цвет обратно
-                    imgui.PushStyleColor(imgui.Col.Text, imgui.ImVec4(1.0, 0.8, 0.0, 1.0))
-			if imgui.Button(u8'Забрать прибыль', imgui.ImVec2(imgui.GetWindowWidth()-imStyle.ItemSpacing.x*2, 30)) then
-                        workLauncher.handleVideocardAction(1, 2, "Нечего забирать.")
-                    end
-                    imgui.PopStyleColor() -- не забываем вернуть цвет обратно
-
-			if imgui.ButtonClickable("Нельзя заливать жидкости через 'Флэшка Майнера'", (__imDialogData.title:find("дом") == nil), u8'Залить охлаждающие жидкости', imgui.ImVec2(imgui.GetWindowWidth()-imStyle.ItemSpacing.x*2, 30)) then
-                        workLauncher.handleVideocardAction(2, 3, "Охлаждение не требуется.")
-                    end
-			imgui.PushStyleColor(imgui.Col.Text, imgui.ImVec4(0.5, 0.5, 0.5, 1.0))
-                    if imgui.Button(u8'Настройки', imgui.ImVec2(imgui.GetWindowWidth()-imStyle.ItemSpacing.x*2, 30)) then
-                        imgui.OpenPopup(u8'Настройки##confirmPopup')
-                    end
-			imgui.PopStyleColor() -- не забываем вернуть цвет обратно
-                    _settingsPopup()
-
-                end
-
-            imgui.EndChild()
-
-        imgui.EndChild()
-
-        imgui.End()
-
+		imgui.Separator()
+		imgui.CenterText(fa.USER.. u8" Authorship")
+		imgui.TextWrapped(u8'\n Creator "Mimgui Scoreboard" - MTG MODS\n Support: https://discord.gg/qBPEYjfNhv')
+		imgui.End()
+		
     end
+)
 
+function drawScoreboardPlayer(id)
+
+	local nickname = u8(sampGetPlayerNickname(id))
+	local score = sampGetPlayerScore(id)
+	local ping = sampGetPlayerPing(id)
+	local color = sampGetPlayerColor(id)
+	local r, g, b = bitex.bextract(color, 16, 8), bitex.bextract(color, 8, 8), bitex.bextract(color, 0, 8)
+	local imgui_RGBA = imgui.ImVec4(r / 255, g / 255, b / 255, 1)
+	
+	
+	imgui.SetCursorPosX((imgui.GetColumnOffset() + (imgui.GetColumnWidth() / 2)) - imgui.CalcTextSize(tostring(id)).x / 2)
+	if MainIni.settings.colored_id then 
+		if score == 0 and isPlayingArizona() then
+			imgui.Text(tostring(id))
+		else
+			imgui.TextColored(imgui_RGBA, tostring(id))
+		end
+	else
+		imgui.Text(tostring(id))
+	end
+	imgui.NextColumn()
+	
+	if MainIni.settings.colored_nickname then 
+		if score == 0 and isPlayingArizona() then
+			imgui.Text(" "..tostring(nickname)) imgui.SameLine() imgui.Text(u8"[Connecting...]")
+		else
+			imgui.TextColored(imgui_RGBA, ' '..nickname)
+		end
+	else
+		if score == 0 and isPlayingArizona() then
+			imgui.Text(" "..tostring(nickname)) imgui.SameLine() imgui.Text(u8"[Connecting...]")
+		else
+			imgui.Text(' '..nickname)
+		end
+		
+	end
+	imgui.NextColumn()	
+	
+	imgui.SetCursorPosX((imgui.GetColumnOffset() + (imgui.GetColumnWidth() / 2)) - imgui.CalcTextSize(tostring(score)).x / 2)
+	if MainIni.settings.colored_score then 
+		if score == 0 and isPlayingArizona() then
+			imgui.Text(tostring(score))
+		else
+			imgui.TextColored(imgui_RGBA, tostring(score))
+		end
+	else
+		imgui.Text(tostring(score))
+	end
+	imgui.NextColumn()
+	
+	if MainIni.settings.colored_ping then 
+		if score == 0 and isPlayingArizona() then
+			imgui.SetCursorPosX((imgui.GetColumnOffset() + (imgui.GetColumnWidth() / 2)) - imgui.CalcTextSize(tostring(0)).x / 2)
+			imgui.Text("0")
+		else
+			imgui.SetCursorPosX((imgui.GetColumnOffset() + (imgui.GetColumnWidth() / 2)) - imgui.CalcTextSize(tostring(ping)).x / 2)
+			imgui.TextColored(imgui_RGBA, tostring(ping))
+		end
+	else	
+		imgui.SetCursorPosX((imgui.GetColumnOffset() + (imgui.GetColumnWidth() / 2)) - imgui.CalcTextSize(tostring(ping)).x / 2)
+		imgui.Text(tostring(ping))
+	end
+	imgui.NextColumn()
+	
+	if MainIni.settings.show_actions_menu then
+	
+		if not isPlayingArizona() then
+			imgui.Text('   ')
+			imgui.SameLine()
+		end
+	
+		if imgui.Button(fa.COPY.."##"..id, imgui.ImVec2(22 ,22.5 )) then
+			setClipboardText(tostring(nickname))
+		end
+		if imgui.IsItemHovered() then
+			imgui.SetTooltip(u8"Copy Nickname "..nickname..u8" in buffer")
+		end
+		
+		if isPlayingArizona() then
+		
+			imgui.SameLine()
+			
+			if imgui.Button(fa.PHONE.."##"..id, imgui.ImVec2(22 , 22.5 )) then
+				call_checker = true
+				sampSendChat("/number "..id)
+			end
+			if imgui.IsItemHovered() then
+				imgui.SetTooltip(u8"Call "..nickname)
+			end
+
+		end
+	
+		imgui.NextColumn()
+	
+	end
+
+	
+	
+end
+function imgui.CenterColumnText(text)
+    imgui.SetCursorPosX((imgui.GetColumnOffset() + (imgui.GetColumnWidth() / 2)) - imgui.CalcTextSize(text).x / 2)
+    imgui.Text(text)
+end
+function imgui.CenterText(text)
+    local width = imgui.GetWindowWidth()
+    local calc = imgui.CalcTextSize(text)
+    imgui.SetCursorPosX( width / 2 - calc.x / 2 )
+    imgui.Text(text)
+end
+function imgui.CenterColumnButton(text)
+
+	if text:find('(.+)##(.+)') then
+		local text1, text2 = text:match('(.+)##(.+)')
+		imgui.SetCursorPosX((imgui.GetColumnOffset() + (imgui.GetColumnWidth() / 2)) - imgui.CalcTextSize(text1).x / 2)
+	else
+		imgui.SetCursorPosX((imgui.GetColumnOffset() + (imgui.GetColumnWidth() / 2)) - imgui.CalcTextSize(text).x / 2)
+	end
+	
+    if imgui.Button(text) then
+		return true
+	else
+		return false
+	end
 end
 
-function imgui.SelectableEx(label, selected, flags, imVecSize, hoverFunc)
-    if imgui.Selectable("##"..label, selected, flags, imVecSize) then
-        return true
-    end
-    hoverFunc()
-    imgui.SameLine()
-    imgui.SetCursorPosX(imgui.GetStyle().ItemSpacing.x)
-    imgui.TextColoredRGB(label)
+function blue_theme()
+   
+	imgui.SwitchContext()
+    imgui.GetStyle().WindowPadding = imgui.ImVec2(5 , 5 )
+    imgui.GetStyle().FramePadding = imgui.ImVec2(5 , 5 )
+    imgui.GetStyle().ItemSpacing = imgui.ImVec2(5 , 5 )
+    imgui.GetStyle().ItemInnerSpacing = imgui.ImVec2(2 , 2 )
+    imgui.GetStyle().TouchExtraPadding = imgui.ImVec2(0, 0)
+    imgui.GetStyle().IndentSpacing = 0
+    imgui.GetStyle().ScrollbarSize = 10 
+    imgui.GetStyle().GrabMinSize = 10 
+    imgui.GetStyle().WindowBorderSize = 1 
+    imgui.GetStyle().ChildBorderSize = 1 
+    imgui.GetStyle().PopupBorderSize = 1 
+    imgui.GetStyle().FrameBorderSize = 1 
+    imgui.GetStyle().TabBorderSize = 1 
+	imgui.GetStyle().WindowRounding = 8 
+    imgui.GetStyle().ChildRounding = 8 
+    imgui.GetStyle().FrameRounding = 8 
+    imgui.GetStyle().PopupRounding = 8 
+    imgui.GetStyle().ScrollbarRounding = 8 
+    imgui.GetStyle().GrabRounding = 8 
+    imgui.GetStyle().TabRounding = 8 
+    imgui.GetStyle().WindowTitleAlign = imgui.ImVec2(0.5, 0.5)
+    imgui.GetStyle().ButtonTextAlign = imgui.ImVec2(0.5, 0.5)
+    imgui.GetStyle().SelectableTextAlign = imgui.ImVec2(0.5, 0.5)
+
+
+    imgui.GetStyle().Colors[imgui.Col.FrameBg]                = imgui.ImVec4(0.16, 0.29, 0.48, 0.54)
+    imgui.GetStyle().Colors[imgui.Col.FrameBgHovered]         = imgui.ImVec4(0.26, 0.59, 0.98, 0.40)
+    imgui.GetStyle().Colors[imgui.Col.FrameBgActive]          = imgui.ImVec4(0.26, 0.59, 0.98, 0.67)
+    imgui.GetStyle().Colors[imgui.Col.TitleBg]                = imgui.ImVec4(0.04, 0.04, 0.04, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.TitleBgActive]          = imgui.ImVec4(0.16, 0.29, 0.48, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.TitleBgCollapsed]       = imgui.ImVec4(0.00, 0.00, 0.00, 0.51)
+    imgui.GetStyle().Colors[imgui.Col.CheckMark]              = imgui.ImVec4(0.26, 0.59, 0.98, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.SliderGrab]             = imgui.ImVec4(0.24, 0.52, 0.88, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.SliderGrabActive]       = imgui.ImVec4(0.26, 0.59, 0.98, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.Button]                 = imgui.ImVec4(0.26, 0.59, 0.98, 0.40)
+    imgui.GetStyle().Colors[imgui.Col.ButtonHovered]          = imgui.ImVec4(0.26, 0.59, 0.98, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.ButtonActive]           = imgui.ImVec4(0.06, 0.53, 0.98, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.Header]                 = imgui.ImVec4(0.26, 0.59, 0.98, 0.31)
+    imgui.GetStyle().Colors[imgui.Col.HeaderHovered]          = imgui.ImVec4(0.26, 0.59, 0.98, 0.80)
+    imgui.GetStyle().Colors[imgui.Col.HeaderActive]           = imgui.ImVec4(0.26, 0.59, 0.98, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.Separator]              = imgui.ImVec4(0.26, 0.59, 0.98, 0.40)
+    imgui.GetStyle().Colors[imgui.Col.SeparatorHovered]       = imgui.ImVec4(0.26, 0.59, 0.98, 0.78)
+    imgui.GetStyle().Colors[imgui.Col.SeparatorActive]        = imgui.ImVec4(0.26, 0.59, 0.98, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.ResizeGrip]             = imgui.ImVec4(0.26, 0.59, 0.98, 0.25)
+    imgui.GetStyle().Colors[imgui.Col.ResizeGripHovered]      = imgui.ImVec4(0.26, 0.59, 0.98, 0.67)
+    imgui.GetStyle().Colors[imgui.Col.ResizeGripActive]       = imgui.ImVec4(0.26, 0.59, 0.98, 0.95)
+    imgui.GetStyle().Colors[imgui.Col.TextSelectedBg]         = imgui.ImVec4(0.26, 0.59, 0.98, 0.35)
+    imgui.GetStyle().Colors[imgui.Col.Text]                   = imgui.ImVec4(1.00, 1.00, 1.00, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.TextDisabled]           = imgui.ImVec4(0.50, 0.50, 0.50, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.WindowBg]               = imgui.ImVec4(0.07, 0.07, 0.07, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.ChildBg]                = imgui.ImVec4(1.00, 1.00, 1.00, 0.00)
+    imgui.GetStyle().Colors[imgui.Col.PopupBg]                = imgui.ImVec4(0.08, 0.08, 0.08, 0.94)
+    imgui.GetStyle().Colors[imgui.Col.Border]                 = imgui.ImVec4(0.43, 0.43, 0.50, 0.50)
+    imgui.GetStyle().Colors[imgui.Col.BorderShadow]           = imgui.ImVec4(0.00, 0.00, 0.00, 0.00)
+    imgui.GetStyle().Colors[imgui.Col.MenuBarBg]              = imgui.ImVec4(0.14, 0.14, 0.14, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.ScrollbarBg]            = imgui.ImVec4(0.02, 0.02, 0.02, 0.53)
+    imgui.GetStyle().Colors[imgui.Col.ScrollbarGrab]          = imgui.ImVec4(0.31, 0.31, 0.31, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.ScrollbarGrabHovered]   = imgui.ImVec4(0.41, 0.41, 0.41, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.ScrollbarGrabActive]    = imgui.ImVec4(0.51, 0.51, 0.51, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.PlotLines]              = imgui.ImVec4(0.61, 0.61, 0.61, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.PlotLinesHovered]       = imgui.ImVec4(1.00, 0.43, 0.35, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.PlotHistogram]          = imgui.ImVec4(0.90, 0.70, 0.00, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.PlotHistogramHovered]   = imgui.ImVec4(1.00, 0.60, 0.00, 1.00)
+	
+	local alpha = tonumber(SliderOne[0] / 100)
+		
+			
+		
+			if MainIni.settings.main_theme == 1 then
+				imgui.GetStyle().Colors[imgui.Col.WindowBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+				imgui.GetStyle().Colors[imgui.Col.PopupBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+				imgui.GetStyle().Colors[imgui.Col.ChildBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+				imgui.GetStyle().Colors[imgui.Col.FrameBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+				imgui.GetStyle().Colors[imgui.Col.TitleBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+			elseif MainIni.settings.main_theme == 2 then
+				imgui.GetStyle().Colors[imgui.Col.WindowBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+				imgui.GetStyle().Colors[imgui.Col.PopupBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+				imgui.GetStyle().Colors[imgui.Col.ChildBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+				imgui.GetStyle().Colors[imgui.Col.FrameBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+				imgui.GetStyle().Colors[imgui.Col.TitleBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+			elseif MainIni.settings.main_theme == 3 then
+				imgui.GetStyle().Colors[imgui.Col.WindowBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+				imgui.GetStyle().Colors[imgui.Col.PopupBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+				imgui.GetStyle().Colors[imgui.Col.ChildBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+				imgui.GetStyle().Colors[imgui.Col.FrameBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+				imgui.GetStyle().Colors[imgui.Col.TitleBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+			end
+	
 end
-function imgui.TextColoredRGB(text)
-    local style = imgui.GetStyle()
-    local colors = style.Colors
-    local ImVec4 = imgui.ImVec4
-
-    local explode_argb = function(argb)
-        local a = bit.band(bit.rshift(argb, 24), 0xFF)
-        local r = bit.band(bit.rshift(argb, 16), 0xFF)
-        local g = bit.band(bit.rshift(argb, 8), 0xFF)
-        local b = bit.band(argb, 0xFF)
-        return a, r, g, b
-    end
-
-    local getcolor = function(color)
-        if color:sub(1, 6):upper() == 'SSSSSS' then
-            local r, g, b = colors[1].x, colors[1].y, colors[1].z
-            local a = tonumber(color:sub(7, 8), 16) or colors[1].w * 255
-            return ImVec4(r, g, b, a / 255)
-        end
-        local color = type(color) == 'string' and tonumber(color, 16) or color
-        if type(color) ~= 'number' then return end
-        local r, g, b, a = explode_argb(color)
-        return imgui.ImColor(r, g, b, a):GetVec4()
-    end
-
-    local render_text = function(text_)
-        for w in text_:gmatch('[^\r\n]+') do
-            local text, colors_, m = {}, {}, 1
-            w = w:gsub('{(......)}', '{%1FF}')
-            while w:find('{........}') do
-                local n, k = w:find('{........}')
-                local color = getcolor(w:sub(n + 1, k - 1))
-                if color then
-                    text[#text], text[#text + 1] = w:sub(m, n - 1), w:sub(k + 1, #w)
-                    colors_[#colors_ + 1] = color
-                    m = n
-                end
-                w = w:sub(1, n - 1) .. w:sub(k + 1, #w)
-            end
-            if text[0] then
-                for i = 0, #text do
-                    imgui.TextColored(colors_[i] or colors[1], u8(text[i]))
-                    imgui.SameLine(nil, 0)
-                end
-                imgui.NewLine()
-            else imgui.Text(u8(w)) end
-        end
-    end
-
-    render_text(text)
-end
-function imgui.customCloseButton(label, size)
-    local style = imgui.GetStyle()
-    local colors = style.Colors
-
-    local buttonColor = imgui.ImVec4(0.8, 0.0, 0.0, 1.0) -- Red
-    local buttonHoverColor = imgui.ImVec4(1.0, 0.2, 0.2, 1.0) -- Lighter Red
-    local buttonActiveColor = imgui.ImVec4(0.6, 0.0, 0.0, 1.0) -- Darker Red
-
-    local oldButtonColor = colors[imgui.Col.Button]
-    local oldButtonHoveredColor = colors[imgui.Col.ButtonHovered]
-    local oldButtonActiveColor = colors[imgui.Col.ButtonActive]
-    local oldTextColor = colors[imgui.Col.Text]
-
-    imgui.PushStyleColor(imgui.Col.Button, buttonColor)
-    imgui.PushStyleColor(imgui.Col.ButtonHovered, buttonHoverColor)
-    imgui.PushStyleColor(imgui.Col.ButtonActive, buttonActiveColor)
-    imgui.PushStyleColor(imgui.Col.Text, oldTextColor)
-
-    local clicked = imgui.Button(label, size)
-
-    imgui.PopStyleColor(4)
-
-    return clicked
-end
-function imgui.ButtonClickable(hint, clickable, ...)
-    if clickable then
-        return imgui.Button(...)
-
-    else
-        local r, g, b, a = imgui.ImColor(imgui.GetStyle().Colors[imgui.Col.Button]):GetFloat4()
-        imgui.PushStyleColor(imgui.Col.Button, imgui.ImVec4(r, g, b, a/2) )
-        imgui.PushStyleColor(imgui.Col.ButtonHovered, imgui.ImVec4(r, g, b, a/2))
-        imgui.PushStyleColor(imgui.Col.ButtonActive, imgui.ImVec4(r, g, b, a/2))
-        imgui.PushStyleColor(imgui.Col.Text, imgui.GetStyle().Colors[imgui.Col.TextDisabled])
-            imgui.Button(...)
-        imgui.PopStyleColor()
-        imgui.PopStyleColor()
-        imgui.PopStyleColor()
-        imgui.PopStyleColor()
-        if hint then
-            if imgui.IsItemHovered() then
-                imgui.SetTooltip(u8(hint))
-            end
-        end
-    end
-end
-function imgui.MihailKrug(text, hint)
-    local value = 0.3
-    local bgColor = imgui.GetColorU32(imgui.ImVec4(0.2, 0.2, 0.2, 1.0))
-    local fgColor = imgui.GetColorU32(imgui.ImVec4(1.0, 1.0, 1.0, 1.0))
-    local speed = 2.0
-    local width = 10.0
-    text = u8(text or "Process...")
-    hint = hint and u8(hint) or nil
-
-    -- Вычисление размеров текста и радиуса круга
-    local textSize = imgui.CalcTextSize(text)
-    local radius = math.max(textSize.x, textSize.y) * 0.5 + width + 10
-
-    -- Установка позиции курсора для центрирования круга
-    imgui.SetCursorPosX((imgui.GetContentRegionAvail().x - (radius * 2)) / 2)
-
-    local drawList = imgui.GetWindowDrawList()
-    local cursorPos = imgui.GetCursorScreenPos()
-    local centerX = cursorPos.x + radius
-    local centerY = cursorPos.y + radius
-
-    -- Параметры анимации
-    local segments = 64
-    local angle = (1.0 - value) * math.pi
-    local animatedAngle = (math.pi * 0.5 + os.clock() * speed) % (math.pi * 2)
-    local endAngle = animatedAngle + angle
-    local radiusInner = radius - width
-
-    -- Рисование круга и проверка наведения курсора
-    imgui.Dummy(imgui.ImVec2(radius * 2, radius * 2))
-    if hint and imgui.IsItemHovered() then
-        fgColor = imgui.GetColorU32(imgui.ImVec4(imgui.GetStyle().Colors[imgui.Col.ButtonHovered]))
-        imgui.SetTooltip(hint)
-    end
-
-    -- Рисование сегментов круга
-    if angle > 0 then
-        local step = angle / segments
-        for i = 0, segments - 1 do
-            local currentAngle = animatedAngle + i * step
-            local nextAngle = currentAngle + step
-
-            local x1 = centerX + math.cos(currentAngle) * radius
-            local y1 = centerY + math.sin(currentAngle) * radius
-            local x2 = centerX + math.cos(nextAngle) * radius
-            local y2 = centerY + math.sin(nextAngle) * radius
-            local x3 = centerX + math.cos(currentAngle) * radiusInner
-            local y3 = centerY + math.sin(currentAngle) * radiusInner
-            local x4 = centerX + math.cos(nextAngle) * radiusInner
-            local y4 = centerY + math.sin(nextAngle) * radiusInner
-
-            drawList:AddQuadFilled(imgui.ImVec2(x1, y1), imgui.ImVec2(x2, y2), imgui.ImVec2(x4, y4), imgui.ImVec2(x3, y3), fgColor)
-        end
-    end
-
-    -- Рисование текста в центре круга
-    local textPos = imgui.ImVec2(centerX - textSize.x * 0.5, centerY - textSize.y * 0.5)
-    drawList:AddText(textPos, fgColor, text)
-
-    -- Проверка нажатия на элемент
-    if imgui.IsItemHovered() and imgui.IsItemClicked(0) then
-        return true
-    end
-end
-function imgui.Link(label, description)
-
-    local size = imgui.CalcTextSize(label)
-    local p = imgui.GetCursorScreenPos()
-    local p2 = imgui.GetCursorPos()
-    local result = imgui.InvisibleButton(label, size)
-
-    imgui.SetCursorPos(p2)
-
-    if imgui.IsItemHovered() then
-        if description then
-            imgui.BeginTooltip()
-            imgui.PushTextWrapPos(600)
-            imgui.TextUnformatted(description)
-            imgui.PopTextWrapPos()
-            imgui.EndTooltip()
-
-        end
-
-        imgui.TextColored(imgui.GetStyle().Colors[imgui.Col.CheckMark], label)
-        imgui.GetWindowDrawList():AddLine(imgui.ImVec2(p.x, p.y + size.y), imgui.ImVec2(p.x + size.x, p.y + size.y), imgui.GetColorU32(imgui.GetStyle().Colors[imgui.Col.CheckMark]))
-
-    else
-        imgui.TextColored(imgui.GetStyle().Colors[imgui.Col.CheckMark], label)
-    end
-
-    return result
-end
-function _settingsPopup()
-    if imgui.BeginPopupModal(u8'Настройки##confirmPopup',nil,imgui.WindowFlags.NoResize) then
-
-        --imgui.SetCursorPosX(imgui.GetWindowWidth()/2 - imgui.CalcTextSize(u8("Укажите процент охлаждающей жидкости для заполнения:")).x/2)
-        imgui.Text(u8("Укажите процент охлаждающей жидкости для заполнения:"))
-        imgui.PushItemWidth(imgui.GetWindowWidth()-imStyle.ItemSpacing.x*2)
-        if imgui.SliderInt('##coolantSlider', imcfg.coolantPercents, 1, 99) then
-            cfg.coolantPercents = imcfg.coolantPercents.v
-            save()
-        end
-        imgui.Separator()
-        --imgui.Text(u8'Множитель: '..cfg.multiply .. " | "..tostring(cfg.multiply == 1 and 1 or cfg.multiply == 2 and 1.5 or cfg.multiply == 3 and 2))
-
-        -- if imgui.Checkbox(u8'Считать 2х прибыль', imcfg.multiply2x) then
-        --     cfg.multiply2x = imcfg.multiply2x.v
-        --     save()
-        -- end
-        -- if imgui.IsItemHovered() then
-        --     imgui.SetTooltip(u8("Если ваши фермы находятся на Vice-City или ПХ, то майнинг приносит x2.\nНажмите эту галочку."))
-        -- end
-
-        imgui.NewLine()
-
-        imgui.SetCursorPosX(imgui.GetWindowWidth()/2-50)
-        if imgui.Button(u8'Закрыть##declinePopup', imgui.ImVec2(100, 50)) then
-            imgui.CloseCurrentPopup()
-        end
-
-        imgui.EndPopup()
-    end
-end
-function __closeWindow(bool)
-    sampSendDialogResponsed(__imDialogData.id, 0)
-    imgui_windows.dialog.v = false
-    if bool and sampIsDialogActive() then sampCloseCurrentDialogWithButton(0) end
-end
-
-local needReturnToMainWindow = false
-local cryptoAnalysys = {
-    btc = 0,
-    asc = 0
-}
-  
-    imgui_windows.dialog.v = true
-    if not work.on then imgui_windows.dialog.v = false return false end
+function fiol_theme()
     
+	imgui.SwitchContext()
+    imgui.GetStyle().WindowPadding = imgui.ImVec2(5 , 5 )
+    imgui.GetStyle().FramePadding = imgui.ImVec2(5 , 5 )
+    imgui.GetStyle().ItemSpacing = imgui.ImVec2(5 , 5 )
+    imgui.GetStyle().ItemInnerSpacing = imgui.ImVec2(2 , 2 )
+    imgui.GetStyle().TouchExtraPadding = imgui.ImVec2(0, 0)
+    imgui.GetStyle().IndentSpacing = 0
+    imgui.GetStyle().ScrollbarSize = 10 
+    imgui.GetStyle().GrabMinSize = 10 
+    imgui.GetStyle().WindowBorderSize = 1 
+    imgui.GetStyle().ChildBorderSize = 1 
+    imgui.GetStyle().PopupBorderSize = 1 
+    imgui.GetStyle().FrameBorderSize = 1 
+    imgui.GetStyle().TabBorderSize = 1 
+	imgui.GetStyle().WindowRounding = 8 
+    imgui.GetStyle().ChildRounding = 8 
+    imgui.GetStyle().FrameRounding = 8 
+    imgui.GetStyle().PopupRounding = 8 
+    imgui.GetStyle().ScrollbarRounding = 8 
+    imgui.GetStyle().GrabRounding = 8 
+    imgui.GetStyle().TabRounding = 8 
+    imgui.GetStyle().WindowTitleAlign = imgui.ImVec2(0.5, 0.5)
+    imgui.GetStyle().ButtonTextAlign = imgui.ImVec2(0.5, 0.5)
+    imgui.GetStyle().SelectableTextAlign = imgui.ImVec2(0.5, 0.5)
 
-    -- Вспомогательные функции
-    local function deactivateScript(message, needOff)
-        if needOff then imgui_windows.dialog.v = false end
-        work.on = false
-        utils.addChat(message)
-    end
+    imgui.GetStyle().Colors[imgui.Col.WindowBg] = imgui.ImVec4(0.14, 0.12, 0.16, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.ChildBg] = imgui.ImVec4(0.30, 0.20, 0.39, 0.00)
+    imgui.GetStyle().Colors[imgui.Col.PopupBg] = imgui.ImVec4(0.05, 0.05, 0.10, 0.90)
+    imgui.GetStyle().Colors[imgui.Col.Border] = imgui.ImVec4(0.89, 0.85, 0.92, 0.30)
+    imgui.GetStyle().Colors[imgui.Col.BorderShadow] = imgui.ImVec4(0.00, 0.00, 0.00, 0.00)
+    imgui.GetStyle().Colors[imgui.Col.FrameBg] = imgui.ImVec4(0.30, 0.20, 0.39, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.FrameBgHovered] = imgui.ImVec4(0.41, 0.19, 0.63, 0.68)
+    imgui.GetStyle().Colors[imgui.Col.FrameBgActive] = imgui.ImVec4(0.41, 0.19, 0.63, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.TitleBg] = imgui.ImVec4(0.41, 0.19, 0.63, 0.45)
+    imgui.GetStyle().Colors[imgui.Col.TitleBgCollapsed] = imgui.ImVec4(0.41, 0.19, 0.63, 0.35)
+    imgui.GetStyle().Colors[imgui.Col.TitleBgActive] = imgui.ImVec4(0.41, 0.19, 0.63, 0.78)
+    imgui.GetStyle().Colors[imgui.Col.MenuBarBg] = imgui.ImVec4(0.30, 0.20, 0.39, 0.57)
+	imgui.GetStyle().Colors[imgui.Col.Separator] = imgui.ImVec4(0.41, 0.19, 0.63, 0.44)
+    imgui.GetStyle().Colors[imgui.Col.ScrollbarBg] = imgui.ImVec4(0.30, 0.20, 0.39, 0.60)
+    imgui.GetStyle().Colors[imgui.Col.ScrollbarGrab] = imgui.ImVec4(0.41, 0.19, 0.63, 0.91)
+    imgui.GetStyle().Colors[imgui.Col.ScrollbarGrabHovered] = imgui.ImVec4(0.41, 0.19, 0.63, 0.78)
+    imgui.GetStyle().Colors[imgui.Col.ScrollbarGrabActive] = imgui.ImVec4(0.41, 0.19, 0.63, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.CheckMark] = imgui.ImVec4(0.56, 0.61, 1.00, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.SliderGrab] = imgui.ImVec4(0.41, 0.19, 0.63, 0.24)
+    imgui.GetStyle().Colors[imgui.Col.SliderGrabActive] = imgui.ImVec4(0.41, 0.19, 0.63, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.Button] = imgui.ImVec4(0.41, 0.19, 0.63, 0.44)
+    imgui.GetStyle().Colors[imgui.Col.ButtonHovered] = imgui.ImVec4(0.41, 0.19, 0.63, 0.86)
+    imgui.GetStyle().Colors[imgui.Col.ButtonActive] = imgui.ImVec4(0.64, 0.33, 0.94, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.Header] = imgui.ImVec4(0.41, 0.19, 0.63, 0.76)
+    imgui.GetStyle().Colors[imgui.Col.HeaderHovered] = imgui.ImVec4(0.41, 0.19, 0.63, 0.86)
+    imgui.GetStyle().Colors[imgui.Col.HeaderActive] = imgui.ImVec4(0.41, 0.19, 0.63, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.ResizeGrip] = imgui.ImVec4(0.41, 0.19, 0.63, 0.20)
+    imgui.GetStyle().Colors[imgui.Col.ResizeGripHovered] = imgui.ImVec4(0.41, 0.19, 0.63, 0.78)
+    imgui.GetStyle().Colors[imgui.Col.ResizeGripActive] = imgui.ImVec4(0.41, 0.19, 0.63, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.PlotLines] = imgui.ImVec4(0.89, 0.85, 0.92, 0.63)
+    imgui.GetStyle().Colors[imgui.Col.PlotLinesHovered] = imgui.ImVec4(0.41, 0.19, 0.63, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.PlotHistogram] = imgui.ImVec4(0.89, 0.85, 0.92, 0.63)
+    imgui.GetStyle().Colors[imgui.Col.PlotHistogramHovered] = imgui.ImVec4(0.41, 0.19, 0.63, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.TextSelectedBg] = imgui.ImVec4(0.41, 0.19, 0.63, 0.43)
+	
+	
+	local alpha = tonumber(SliderOne[0] / 100)
+		
+			
+		
+			if MainIni.settings.main_theme == 1 then
+				imgui.GetStyle().Colors[imgui.Col.WindowBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+				imgui.GetStyle().Colors[imgui.Col.PopupBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+				imgui.GetStyle().Colors[imgui.Col.ChildBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+				imgui.GetStyle().Colors[imgui.Col.FrameBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+				imgui.GetStyle().Colors[imgui.Col.TitleBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+			elseif MainIni.settings.main_theme == 2 then
+				imgui.GetStyle().Colors[imgui.Col.WindowBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+				imgui.GetStyle().Colors[imgui.Col.PopupBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+				imgui.GetStyle().Colors[imgui.Col.ChildBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+				imgui.GetStyle().Colors[imgui.Col.FrameBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+				imgui.GetStyle().Colors[imgui.Col.TitleBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+			elseif MainIni.settings.main_theme == 3 then
+				imgui.GetStyle().Colors[imgui.Col.WindowBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+				imgui.GetStyle().Colors[imgui.Col.PopupBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+				imgui.GetStyle().Colors[imgui.Col.ChildBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+				imgui.GetStyle().Colors[imgui.Col.FrameBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+				imgui.GetStyle().Colors[imgui.Col.TitleBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+			end
+	
+end
+function dark_theme()
 
-    local function findLineAndRespond(pattern, checkFunc, listboxId)
-        for line in string.gmatch(text, "[^\r\n]+") do
-            if line:find(pattern) and checkFunc(line) then
-                sampSendDialogResponsed(id, 1, listboxId, line)
-                return true
-            end
-            listboxId = listboxId + 1
-        end
-        return false
-    end
+	imgui.SwitchContext()
+    imgui.GetStyle().WindowPadding = imgui.ImVec2(5 , 5 )
+    imgui.GetStyle().FramePadding = imgui.ImVec2(5 , 5 )
+    imgui.GetStyle().ItemSpacing = imgui.ImVec2(5 , 5 )
+    imgui.GetStyle().ItemInnerSpacing = imgui.ImVec2(2 , 2 )
+    imgui.GetStyle().TouchExtraPadding = imgui.ImVec2(0, 0)
+    imgui.GetStyle().IndentSpacing = 0
+    imgui.GetStyle().ScrollbarSize = 10 
+    imgui.GetStyle().GrabMinSize = 10 
+    imgui.GetStyle().WindowBorderSize = 1 
+    imgui.GetStyle().ChildBorderSize = 1 
+    imgui.GetStyle().PopupBorderSize = 1 
+    imgui.GetStyle().FrameBorderSize = 1 
+    imgui.GetStyle().TabBorderSize = 1 
+	imgui.GetStyle().WindowRounding = 8 
+    imgui.GetStyle().ChildRounding = 8 
+    imgui.GetStyle().FrameRounding = 8 
+    imgui.GetStyle().PopupRounding = 8 
+    imgui.GetStyle().ScrollbarRounding = 8 
+    imgui.GetStyle().GrabRounding = 8 
+    imgui.GetStyle().TabRounding = 8 
+    imgui.GetStyle().WindowTitleAlign = imgui.ImVec2(0.5, 0.5)
+    imgui.GetStyle().ButtonTextAlign = imgui.ImVec2(0.5, 0.5)
+    imgui.GetStyle().SelectableTextAlign = imgui.ImVec2(0.5, 0.5)
+    
+    imgui.GetStyle().Colors[imgui.Col.Text]                   = imgui.ImVec4(1.00, 1.00, 1.00, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.TextDisabled]           = imgui.ImVec4(0.50, 0.50, 0.50, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.WindowBg]               = imgui.ImVec4(0.07, 0.07, 0.07, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.ChildBg]                = imgui.ImVec4(0.07, 0.07, 0.07, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.PopupBg]                = imgui.ImVec4(0.07, 0.07, 0.07, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.Border]                 = imgui.ImVec4(0.25, 0.25, 0.26, 0.54)
+    imgui.GetStyle().Colors[imgui.Col.BorderShadow]           = imgui.ImVec4(0.00, 0.00, 0.00, 0.00)
+    imgui.GetStyle().Colors[imgui.Col.FrameBg]                = imgui.ImVec4(0.12, 0.12, 0.12, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.FrameBgHovered]         = imgui.ImVec4(0.25, 0.25, 0.26, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.FrameBgActive]          = imgui.ImVec4(0.25, 0.25, 0.26, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.TitleBg]                = imgui.ImVec4(0.12, 0.12, 0.12, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.TitleBgActive]          = imgui.ImVec4(0.12, 0.12, 0.12, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.TitleBgCollapsed]       = imgui.ImVec4(0.12, 0.12, 0.12, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.MenuBarBg]              = imgui.ImVec4(0.12, 0.12, 0.12, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.ScrollbarBg]            = imgui.ImVec4(0.12, 0.12, 0.12, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.ScrollbarGrab]          = imgui.ImVec4(0.00, 0.00, 0.00, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.ScrollbarGrabHovered]   = imgui.ImVec4(0.41, 0.41, 0.41, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.ScrollbarGrabActive]    = imgui.ImVec4(0.51, 0.51, 0.51, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.CheckMark]              = imgui.ImVec4(1.00, 1.00, 1.00, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.SliderGrab]             = imgui.ImVec4(0.21, 0.20, 0.20, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.SliderGrabActive]       = imgui.ImVec4(0.21, 0.20, 0.20, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.Button]                 = imgui.ImVec4(0.12, 0.12, 0.12, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.ButtonHovered]          = imgui.ImVec4(0.21, 0.20, 0.20, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.ButtonActive]           = imgui.ImVec4(0.41, 0.41, 0.41, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.Header]                 = imgui.ImVec4(0.12, 0.12, 0.12, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.HeaderHovered]          = imgui.ImVec4(0.20, 0.20, 0.20, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.HeaderActive]           = imgui.ImVec4(0.47, 0.47, 0.47, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.Separator]              = imgui.ImVec4(0.12, 0.12, 0.12, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.SeparatorHovered]       = imgui.ImVec4(0.12, 0.12, 0.12, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.SeparatorActive]        = imgui.ImVec4(0.12, 0.12, 0.12, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.ResizeGrip]             = imgui.ImVec4(1.00, 1.00, 1.00, 0.25)
+    imgui.GetStyle().Colors[imgui.Col.ResizeGripHovered]      = imgui.ImVec4(1.00, 1.00, 1.00, 0.67)
+    imgui.GetStyle().Colors[imgui.Col.ResizeGripActive]       = imgui.ImVec4(1.00, 1.00, 1.00, 0.95)
+    imgui.GetStyle().Colors[imgui.Col.Tab]                    = imgui.ImVec4(0.12, 0.12, 0.12, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.TabHovered]             = imgui.ImVec4(0.28, 0.28, 0.28, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.TabActive]              = imgui.ImVec4(0.30, 0.30, 0.30, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.TabUnfocused]           = imgui.ImVec4(0.07, 0.10, 0.15, 0.97)
+    imgui.GetStyle().Colors[imgui.Col.TabUnfocusedActive]     = imgui.ImVec4(0.14, 0.26, 0.42, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.PlotLines]              = imgui.ImVec4(0.61, 0.61, 0.61, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.PlotLinesHovered]       = imgui.ImVec4(1.00, 0.43, 0.35, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.PlotHistogram]          = imgui.ImVec4(0.90, 0.70, 0.00, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.PlotHistogramHovered]   = imgui.ImVec4(1.00, 0.60, 0.00, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.TextSelectedBg]         = imgui.ImVec4(1.00, 0.00, 0.00, 0.35)
+    imgui.GetStyle().Colors[imgui.Col.DragDropTarget]         = imgui.ImVec4(1.00, 1.00, 0.00, 0.90)
+    imgui.GetStyle().Colors[imgui.Col.NavHighlight]           = imgui.ImVec4(0.26, 0.59, 0.98, 1.00)
+    imgui.GetStyle().Colors[imgui.Col.NavWindowingHighlight]  = imgui.ImVec4(1.00, 1.00, 1.00, 0.70)
+    imgui.GetStyle().Colors[imgui.Col.NavWindowingDimBg]      = imgui.ImVec4(0.80, 0.80, 0.80, 0.20)
+    imgui.GetStyle().Colors[imgui.Col.ModalWindowDimBg]       = imgui.ImVec4(0.12, 0.12, 0.12, 0.95)
+	
+	
+	local alpha = tonumber(SliderOne[0] / 100)
+		
+			
+		
+			if MainIni.settings.main_theme == 1 then
+				imgui.GetStyle().Colors[imgui.Col.WindowBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+				imgui.GetStyle().Colors[imgui.Col.PopupBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+				imgui.GetStyle().Colors[imgui.Col.ChildBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+				imgui.GetStyle().Colors[imgui.Col.FrameBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+				imgui.GetStyle().Colors[imgui.Col.TitleBg] = imgui.ImVec4(0.06, 0.06, 0.06, alpha)
+			elseif MainIni.settings.main_theme == 2 then
+				imgui.GetStyle().Colors[imgui.Col.WindowBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+				imgui.GetStyle().Colors[imgui.Col.PopupBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+				imgui.GetStyle().Colors[imgui.Col.ChildBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+				imgui.GetStyle().Colors[imgui.Col.FrameBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+				imgui.GetStyle().Colors[imgui.Col.TitleBg] = imgui.ImVec4(0.16, 0.29, 0.48, alpha)
+			elseif MainIni.settings.main_theme == 3 then
+				imgui.GetStyle().Colors[imgui.Col.WindowBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+				imgui.GetStyle().Colors[imgui.Col.PopupBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+				imgui.GetStyle().Colors[imgui.Col.ChildBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+				imgui.GetStyle().Colors[imgui.Col.FrameBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+				imgui.GetStyle().Colors[imgui.Col.TitleBg] = imgui.ImVec4(0.14, 0.12, 0.16, alpha)
+			end
+	
+end	
 
-    -- [3. РЕЖИМ СБОРА ПРИБЫЛИ]
-    if work.mode == 1 then
-        if title:find('{BFBBBA}Выберите видеокарту') then
-            if not text:find('%d+%.%d%d%d%d%d%d') then
-                deactivateScript("Ошибка! Код 1.")
-                return
-            end
-
-            if not findLineAndRespond('%d+%.%d%d%d%d%d%d', function(line)
-                return tonumber(line:match("(%d+)%.%d%d%d%d%d%d")) > 0
-            end, -1) then
-                
-                -- ИТОГИ В ТЕКУЩЕМ ДОМЕ
-                if cryptoAnalysys.btc > 0 or cryptoAnalysys.asc > 0 then
-                    utils.addChat("Забрали в этом доме: {99ff99}"..cryptoAnalysys.btc.." BTC {ffffff}| {ffa500}"..cryptoAnalysys.asc..' ASC{ffffff}.')
-                    cryptoAnalysys.btc = 0
-                    cryptoAnalysys.asc = 0
-                end
-
-                -- ПЕРЕХОД К СЛЕДУЮЩЕМУ ДОМУ
-                if autoBot.enabled and autoBot.stage == 2 then
-                    lua_thread.create(function()
-                        wait(1200)
-                        sampSendChat("/flashminer") 
-                    end)
-                else
-                    deactivateScript("Криптовалюта не найдена.")
-                end
-            end -- ЭТОТ END ТЫ ПРОПУСТИЛ
-
-        elseif title:gsub("%-",""):find("{BFBBBA}Стойка №%d+ | Полка №%d+") then
-            if not findLineAndRespond('%d+%.%d%d%d%d%d%d', function(line)
-                return tonumber(line:match("(%d+)%.%d%d%d%d%d%d")) > 0
-            end, 0) then
-                sampSendDialogResponsed(id, 0)
-            end
-        elseif title:find('{BFBBBA}Вывод прибыли видеокарты') then
-            sampSendDialogResponsed(id, 1)
-        end
-    end
-    -- [ОСТАЛЬНЫЕ РЕЖИМЫ (Mode 2, 3, 4) ДОЛЖНЫ ИДТИ НИЖЕ]
-
-function sampev.onServerMessage(color, text)
-    if not work.on then return end
-    if text:find("^Вы вывели {ffffff}%d+ [BTCASC]+{ffff00}") then
-        if text:find("BTC") then
-            cryptoAnalysys.btc = cryptoAnalysys.btc + tonumber(text:match("Вы вывели {ffffff}(%d+)"))
-        elseif text:find("ASC") then
-            cryptoAnalysys.asc = cryptoAnalysys.asc + tonumber(text:match("Вы вывели {ffffff}(%d+)"))
-        end
-        return false
-    elseif text:find("^Вам был добавлен предмет") and (text:find("BTC") or text:find("ASC")) then
-        return false
-    elseif text:find("^%[Ошибка%] {ffffff}Чтобы запустить видеокарту в работу") then
-        work.on = false
-        lua_thread.create(function() wait(0) __closeWindow(true) end)
-    end
+local russian_characters = {
+	[168] = ' ', [184] = ' ', [192] = ' ', [193] = ' ', [194] = ' ', [195] = ' ', [196] = ' ', [197] = ' ', [198] = ' ', [199] = ' ', [200] = ' ', [201] = ' ', [202] = ' ', [203] = ' ', [204] = ' ', [205] = ' ', [206] = ' ', [207] = ' ', [208] = ' ', [209] = ' ', [210] = ' ', [211] = ' ', [212] = ' ', [213] = ' ', [214] = ' ', [215] = ' ', [216] = ' ', [217] = ' ', [218] = ' ', [219] = ' ', [220] = ' ', [221] = ' ', [222] = ' ', [223] = ' ', [224] = ' ', [225] = ' ', [226] = ' ', [227] = ' ', [228] = ' ', [229] = ' ', [230] = ' ', [231] = ' ', [232] = ' ', [233] = ' ', [234] = ' ', [235] = ' ', [236] = ' ', [237] = ' ', [238] = ' ', [239] = ' ', [240] = ' ', [241] = ' ', [242] = ' ', [243] = ' ', [244] = ' ', [245] = ' ', [246] = ' ', [247] = ' ', [248] = ' ', [249] = ' ', [250] = ' ', [251] = ' ', [252] = ' ', [253] = ' ', [254] = ' ', [255] = ' ',
+}
+function string.rlower(s)
+	s = s:lower()
+	local strlen = s:len()
+	if strlen == 0 then return s end
+	s = s:lower()
+	local output = ''
+	for i = 1, strlen do
+		 local ch = s:byte(i)
+		 if ch >= 192 and ch <= 223 then -- upper russian characters
+			  output = output .. russian_characters[ch + 32]
+		 elseif ch == 168 then --  
+			  output = output .. russian_characters[184]
+		 else
+			  output = output .. string.char(ch)
+		 end
+	end
+	return output
 end
 
-sampSendDialogResponsed = function(dialogId, button, list, text)
-    json_timer = {true, json_timer[2], dialogId, button, list, text}
+require "samp.events".onServerMessage = function(color, text)
+	if text:find("{FFFFFF}(.+)%[(%d+)%]:    {33CCFF}(%d+)") and call_checker then
+		lua_thread.create(function()
+			local nick, id, number = string.match(text, '{FFFFFF}(.+)%[(%d+)%]:    {33CCFF}(%d+)')
+			wait(500)
+			sampSendChat("/call "..number)
+			call_checker = false
+		end)
+		return false
+	end
 end
 
-local function findCardIndexById(videocards, id)
-    for index, card in ipairs(videocards) do
-        if card[1] == id then
-            return index
-        end
-    end
-    return nil
+function isPlayingArizona()
+	if sampGetCurrentServerName():find("Arizona") then
+		return true
+	else	
+		return false
+	end
 end
+
+--if not isMonetLoader() then
+
 function onWindowMessage(msg, wparam, lparam)
-    if not work.on and imgui_windows.dialog.v and not isPauseMenuActive() then
-        if msg == 0x101 or msg == 0x100 then
-            if msg == 0x101 and wparam == 0x1B then
-                consumeWindowMessage(true, false)
-                __closeWindow(false)
-            elseif msg == 0x101 and wparam == 0x0D then
-                consumeWindowMessage(true, false)
-                sampSendDialogResponsed(__imDialogData.id, 1, __imDialogData.selectedVideocard)
-                imgui_windows.dialog.v = false
-            end
-            if msg == 0x100 and (wparam == 0x26 or wparam == 0x28) then
-                consumeWindowMessage(true, false)
-                if wparam == 0x26 then
-                    local currentIndex = findCardIndexById(__imDialogData.videocards, __imDialogData.selectedVideocard)
-                    if currentIndex then
-                        currentIndex = currentIndex - 1
-                        if currentIndex < 1 then
-                            currentIndex = #__imDialogData.videocards
-                        end
-                        __imDialogData.selectedVideocard = __imDialogData.videocards[currentIndex][1]
-                    end
-                elseif wparam == 0x28 then
-                    local currentIndex = findCardIndexById(__imDialogData.videocards, __imDialogData.selectedVideocard)
-                    if currentIndex then
-                        currentIndex = currentIndex + 1
-                        if currentIndex > #__imDialogData.videocards then
-                            currentIndex = 1
-                        end
-                        __imDialogData.selectedVideocard = __imDialogData.videocards[currentIndex][1]
-                    end
-                end
-            end
-        end
-    end
-
+	if(msg == 0x100 or msg == 0x101) then
+		if (wparam == VK_ESCAPE and renderTAB[0]) and not isPauseMenuActive() then
+			consumeWindowMessage(true, false)
+			if (msg == 0x101) then
+				renderTAB[0] = false
+			end
+		elseif (wparam == VK_ESCAPE and renderSettings[0]) and not isPauseMenuActive() then
+			consumeWindowMessage(true, false)
+			if (msg == 0x101) then
+				renderSettings[0] = false
+			end
+		elseif wparam == VK_TAB and not isKeyDown(VK_TAB) and not isPauseMenuActive() then
+			if not renderTAB[0] then
+				if not sampIsChatInputActive() then
+					renderTAB[0] = true
+				end
+			else
+				renderTAB[0] = false
+			end
+			consumeWindowMessage(true, false)
+		end
+	end
 end
 
-function sampev.onShowDialog(id, style, title, button1, button2, text)
-    -- Твой новый автобот
-    if autoBot.status and title:find("{BFBBBA}Список домов") then
-        local clickIdx = autoBot.currentHouse
-        autoBot.currentHouse = autoBot.currentHouse + 1
-        autoBot.stage = 2
-        lua_thread.create(function()
-            wait(1000)
-            sampSendDialogResponse(id, 1, clickIdx, "")
-        end)
-        return false
-    end
-
-    -- Твоя логика из оригинального скрипта
-    if needReturnToMainWindow then
-        local a = title:gsub("%-", "")
-        if a:find("{BFBBBA}Стойка №%d+") or a:find("{BFBBBA}Полка №%d+") or a:find("{BFBBBA}Выберите тип жидкости") then
-            sampSendDialogResponse(id, 0)
-        end
-    end
-
-    if title:find("{BFBBBA}Выберите видеокарту") then
-        needReturnToMainWindow = false
-        if not work.on then return end
-        _imDialogData.id, _imDialogData.title, _imDialogData.text = id, title, text
-        _imDialogData.button1, _imDialogData.button2 = button1, button2
-        local list = {}
-        for line in text:gmatch("[^\r\n]+") do table.insert(list, line) end
-        _imDialogData.list = list
-        if not imgui_windows.dialog.v then _imDialogData.show = true end
-        imgui_windows.dialog.v = true
-        return false
-    end
-end
-
+--end
 
